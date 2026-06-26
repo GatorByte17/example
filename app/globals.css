@@ -1,0 +1,81 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── CSS custom properties ─────────────────────────────────────────── */
+:root {
+  --background:    #0a0a0f;
+  --surface:       rgba(255, 255, 255, 0.06);
+  --surface-2:     rgba(255, 255, 255, 0.10);
+  --foreground:    #f0f0f5;
+  --muted:         rgba(240, 240, 245, 0.45);
+  --accent:        #6366f1;
+  --accent-hover:  #5558e8;
+  --border:        rgba(255, 255, 255, 0.10);
+}
+
+html.light {
+  --background:    #f0f0f7;
+  --surface:       rgba(255, 255, 255, 0.65);
+  --surface-2:     rgba(255, 255, 255, 0.85);
+  --foreground:    #0a0a15;
+  --muted:         rgba(10, 10, 21, 0.45);
+  --border:        rgba(0, 0, 0, 0.10);
+}
+
+/* ─── Base ───────────────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Glass card component ───────────────────────────────────────────── */
+.glass-card {
+  background: var(--surface);
+  backdrop-filter: blur(12px) saturate(140%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+}
+
+/* ─── Dashboard shell — full bleed gradient background ───────────────── */
+.dashboard-shell {
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 20%, rgba(99, 102, 241, 0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 80%, rgba(168, 85, 247, 0.08) 0%, transparent 60%),
+    var(--background);
+}
+
+/* ─── react-grid-layout overrides ───────────────────────────────────── */
+.react-grid-item.react-grid-placeholder {
+  background: var(--accent);
+  opacity: 0.15;
+  border-radius: 1.25rem;
+}
+
+.react-resizable-handle::after {
+  border-color: var(--accent) !important;
+}
+
+/* ─── Scrollbar hide utility ─────────────────────────────────────────── */
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
