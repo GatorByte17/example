@@ -33,5 +33,16 @@ export function runMigrations() {
       provider   TEXT PRIMARY KEY,
       data       TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS members (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      name       TEXT    NOT NULL,
+      color      TEXT    NOT NULL DEFAULT '#6366f1',
+      initials   TEXT    NOT NULL,
+      sort_order INTEGER NOT NULL DEFAULT 0
+    );
   `);
+
+  // Additive migrations — safe to run repeatedly
+  try { db.exec("ALTER TABLE todos ADD COLUMN member_id INTEGER"); } catch { /* already exists */ }
 }

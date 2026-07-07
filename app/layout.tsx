@@ -22,8 +22,8 @@ try {
 }
 
 export const metadata: Metadata = {
-  title: "Home Dashboard",
-  description: "Your personal home dashboard",
+  title: "Skylight Dashboard",
+  description: "Your personal family calendar dashboard",
 };
 
 export const viewport: Viewport = {

@@ -5,13 +5,13 @@
 /* ─── CSS custom properties ─────────────────────────────────────────── */
 :root {
   --background:    #0a0a0f;
-  --surface:       rgba(255, 255, 255, 0.06);
-  --surface-2:     rgba(255, 255, 255, 0.10);
+  --surface:       rgba(255, 255, 255, 0.08);
+  --surface-2:     rgba(255, 255, 255, 0.12);
   --foreground:    #f0f0f5;
   --muted:         rgba(240, 240, 245, 0.45);
   --accent:        #6366f1;
   --accent-hover:  #5558e8;
-  --border:        rgba(255, 255, 255, 0.10);
+  --border:        rgba(255, 255, 255, 0.12);
 }
 
 html.light {
@@ -46,25 +46,35 @@ body {
 /* ─── Glass card component ───────────────────────────────────────────── */
 .glass-card {
   background: var(--surface);
-  backdrop-filter: blur(12px) saturate(140%);
-  -webkit-backdrop-filter: blur(12px) saturate(140%);
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
   border: 1px solid var(--border);
-  border-radius: 1.25rem;
+  border-radius: 1rem;
 }
 
-/* ─── Dashboard shell — full bleed gradient background ───────────────── */
+/* ─── Dashboard shell — full bleed gradient fallback ─────────────────── */
 .dashboard-shell {
   background:
-    radial-gradient(ellipse 80% 60% at 20% 20%, rgba(99, 102, 241, 0.12) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 50% at 80% 80%, rgba(168, 85, 247, 0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 80% 60% at 20% 20%, rgba(99, 102, 241, 0.14) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 80%, rgba(168, 85, 247, 0.09) 0%, transparent 60%),
     var(--background);
+}
+
+/* ─── Skylight shell — dark background (photo shows on top) ─────────── */
+.sky-shell {
+  background: #0a0a0f;
+}
+
+/* ─── Skylight header — top gradient for text contrast ──────────────── */
+.sky-header {
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.45) 0%, transparent 100%);
 }
 
 /* ─── react-grid-layout overrides ───────────────────────────────────── */
 .react-grid-item.react-grid-placeholder {
   background: var(--accent);
   opacity: 0.15;
-  border-radius: 1.25rem;
+  border-radius: 1rem;
 }
 
 .react-resizable-handle::after {

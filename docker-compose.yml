@@ -1,0 +1,13 @@
+services:
+  dashboard:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      # Persist SQLite DB and family photos across restarts
+      - ./data:/app/data
+    env_file:
+      - .env.local
+    environment:
+      - NODE_ENV=production

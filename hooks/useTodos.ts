@@ -12,11 +12,11 @@ export function useTodos(listName = "default") {
     { revalidateOnFocus: false }
   );
 
-  async function addTodo(title: string, dueDate?: string) {
+  async function addTodo(title: string, dueDate?: string, memberId?: number) {
     await fetch("/api/todos", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, list: listName, dueDate }),
+      body: JSON.stringify({ title, list: listName, dueDate, memberId }),
     });
     await mutate();
   }

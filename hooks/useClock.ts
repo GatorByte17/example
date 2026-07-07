@@ -22,7 +22,7 @@ export function useClock(): ClockState {
   const hours = time.getHours();
   const minutes = time.getMinutes();
   const seconds = time.getSeconds();
-  const ampm = hours >= 12 ? "AM" : "AM";
+  const ampm = hours >= 12 ? "PM" : "AM";
   const hours12 = hours % 12 || 12;
 
   return { time, hours, minutes, seconds, ampm: hours >= 12 ? "PM" : "AM", hours12 };

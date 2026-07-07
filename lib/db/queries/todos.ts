@@ -8,22 +8,24 @@ export interface Todo {
   list_name: string;
   sort_order: number;
   created_at: string;
+  member_id: number | null;
 }
+
+type TodoRow = Omit<Todo, "done"> & { done: number };
 
 export function getTodos(listName = "default"): Todo[] {
   const db = getDb();
   const rows = db
-    .prepare(
-      "SELECT * FROM todos WHERE list_name = ? ORDER BY sort_order ASC, id ASC"
-    )
-    .all(listName) as (Omit<Todo, "done"> & { done: number })[];
+    .prepare("SELECT * FROM todos WHERE list_name = ? ORDER BY sort_order ASC, id ASC")
+    .all(listName) as TodoRow[];
   return rows.map((r) => ({ ...r, done: r.done === 1 }));
 }
 
 export function addTodo(
   title: string,
   listName = "default",
-  dueDate?: string
+  dueDate?: string,
+  memberId?: number
 ): Todo {
   const db = getDb();
   const maxOrder = (
@@ -33,9 +35,9 @@ export function addTodo(
   ).m ?? -1;
   const result = db
     .prepare(
-      "INSERT INTO todos (title, list_name, due_date, sort_order) VALUES (?, ?, ?, ?)"
+      "INSERT INTO todos (title, list_name, due_date, sort_order, member_id) VALUES (?, ?, ?, ?, ?)"
     )
-    .run(title, listName, dueDate ?? null, maxOrder + 1);
+    .run(title, listName, dueDate ?? null, maxOrder + 1, memberId ?? null);
   return getTodoById(result.lastInsertRowid as number)!;
 }
 
@@ -51,9 +53,7 @@ export function deleteTodo(id: number): void {
 
 export function getTodoById(id: number): Todo | null {
   const db = getDb();
-  const row = db.prepare("SELECT * FROM todos WHERE id = ?").get(id) as
-    | (Omit<Todo, "done"> & { done: number })
-    | undefined;
+  const row = db.prepare("SELECT * FROM todos WHERE id = ?").get(id) as TodoRow | undefined;
   if (!row) return null;
   return { ...row, done: row.done === 1 };
 }

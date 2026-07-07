@@ -1,0 +1,9 @@
+node_modules
+.next
+.git
+.env*.local
+data/dashboard.db
+data/dashboard.db-shm
+data/dashboard.db-wal
+*.md
+.gitignore
