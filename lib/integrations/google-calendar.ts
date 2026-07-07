@@ -35,6 +35,7 @@ function toEvent(
   return {
     // Prefix with the calendar id — recurring-instance ids are only unique per calendar
     id: `${cal.id}:${item.id ?? crypto.randomUUID()}`,
+    seriesKey: `${cal.id}:${item.recurringEventId ?? item.id ?? "unknown"}`,
     title: item.summary ?? "(No title)",
     start: item.start?.dateTime ?? item.start?.date ?? now,
     end: item.end?.dateTime ?? item.end?.date ?? now,

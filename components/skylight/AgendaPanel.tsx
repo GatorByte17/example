@@ -3,7 +3,9 @@
 import { format, parseISO, startOfDay, addDays } from "date-fns";
 import { useCalendar } from "@/hooks/useCalendar";
 import { eventCoversDay } from "@/lib/events";
+import { useUiStore } from "@/store/uiStore";
 import { SkeletonLoader } from "@/components/ui/SkeletonLoader";
+import AssignmentDots from "./AssignmentDots";
 import type { CalendarEvent } from "@/lib/integrations/types";
 
 function timeLabel(event: CalendarEvent): string {
@@ -12,15 +14,19 @@ function timeLabel(event: CalendarEvent): string {
 }
 
 function EventRow({ event }: { event: CalendarEvent }) {
+  const { setAssignEvent } = useUiStore();
   return (
-    <div className="flex items-start gap-2.5 py-2 border-b border-[var(--border)] last:border-0">
+    <button
+      onClick={() => setAssignEvent(event)}
+      className="w-full text-left flex items-start gap-2.5 py-2 border-b border-[var(--border)] last:border-0 hover:bg-[var(--surface-2)]/50 rounded-lg px-1 -mx-1 transition"
+    >
       <div
         className="w-1 self-stretch rounded-full flex-shrink-0 mt-0.5"
         style={{ backgroundColor: event.color ?? "var(--accent)" }}
       />
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-[var(--foreground)] truncate">
-          {event.title}
+          {event.title} <AssignmentDots event={event} />
         </p>
         <span className="inline-block text-[11px] font-medium text-[var(--muted)] bg-[var(--surface-2)] rounded-full px-2 py-0.5 mt-1">
           {timeLabel(event)}
@@ -31,7 +37,7 @@ function EventRow({ event }: { event: CalendarEvent }) {
           </p>
         )}
       </div>
-    </div>
+    </button>
   );
 }
 

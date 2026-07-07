@@ -34,6 +34,9 @@ export interface CalendarEvent {
   color?: string;
   calendarName?: string;
   source: "google" | "icloud" | "local";
+  // Stable key for the whole series (recurring instances share it);
+  // local member assignments attach to this
+  seriesKey: string;
 }
 
 export interface HAEntity {

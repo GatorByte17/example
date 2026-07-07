@@ -7,6 +7,7 @@ import AgendaPanel from "./AgendaPanel";
 import MonthCalendar from "./MonthCalendar";
 import CountdownBanner from "./CountdownBanner";
 import TodoPanel from "./TodoPanel";
+import EventAssignSheet from "./EventAssignSheet";
 
 export default function SkyLayout() {
   const { accentColor } = useThemeStore();
@@ -48,6 +49,8 @@ export default function SkyLayout() {
           </div>
         </div>
       </div>
+
+      <EventAssignSheet />
     </div>
   );
 }

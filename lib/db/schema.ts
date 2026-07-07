@@ -41,6 +41,12 @@ export function runMigrations() {
       initials   TEXT    NOT NULL,
       sort_order INTEGER NOT NULL DEFAULT 0
     );
+
+    CREATE TABLE IF NOT EXISTS event_assignments (
+      event_key  TEXT    NOT NULL,
+      member_id  INTEGER NOT NULL,
+      PRIMARY KEY (event_key, member_id)
+    );
   `);
 
   // Additive migrations — safe to run repeatedly

@@ -19,8 +19,10 @@ import {
 } from "date-fns";
 import { useCalendar } from "@/hooks/useCalendar";
 import { useThemeStore, CalendarView } from "@/store/themeStore";
+import { useUiStore } from "@/store/uiStore";
 import { eventCoversDay } from "@/lib/events";
 import { tint } from "@/lib/colors";
+import AssignmentDots from "./AssignmentDots";
 import type { CalendarEvent } from "@/lib/integrations/types";
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -53,15 +55,18 @@ function sortedEventsForDay(events: CalendarEvent[], day: Date): CalendarEvent[]
 /* ── Month view ─────────────────────────────────────────────────────── */
 
 function MonthChip({ event }: { event: CalendarEvent }) {
+  const { setAssignEvent } = useUiStore();
   return (
-    <div
-      className="w-full px-1.5 py-0.5 rounded-md text-[10px] font-semibold truncate leading-tight
-                 hidden md:landscape:block lg:block"
+    <button
+      onClick={() => setAssignEvent(event)}
+      className="w-full px-1.5 py-0.5 rounded-md text-[10px] font-semibold leading-tight text-left
+                 hidden md:landscape:flex lg:flex items-center gap-1 min-w-0"
       style={chipColors(event.color)}
       title={event.title}
     >
-      {event.title}
-    </div>
+      <span className="truncate flex-1 min-w-0">{event.title}</span>
+      <AssignmentDots event={event} size="xs" />
+    </button>
   );
 }
 
@@ -175,19 +180,23 @@ function MonthGrid({ viewDate, events }: { viewDate: Date; events: CalendarEvent
 /* ── Week view ──────────────────────────────────────────────────────── */
 
 function WeekEventChip({ event }: { event: CalendarEvent }) {
+  const { setAssignEvent } = useUiStore();
   return (
-    <div
-      className="px-2 py-1 rounded-lg text-[11px] leading-tight"
+    <button
+      onClick={() => setAssignEvent(event)}
+      className="px-2 py-1 rounded-lg text-[11px] leading-tight text-left w-full"
       style={chipColors(event.color)}
       title={event.title}
     >
-      <div className="font-bold truncate">{event.title}</div>
+      <div className="font-bold truncate">
+        {event.title} <AssignmentDots event={event} size="xs" />
+      </div>
       {!event.allDay && (
         <div className="opacity-75 font-medium">
           {format(parseISO(event.start), "h:mm a")}
         </div>
       )}
-    </div>
+    </button>
   );
 }
 

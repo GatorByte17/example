@@ -78,8 +78,11 @@ function parseICalEvent(
   }
 
   if (!event.start || !event.title) return null;
+  const id = event.id ?? crypto.randomUUID();
   return {
-    id: event.id ?? crypto.randomUUID(),
+    id,
+    // iCal UIDs are stable across recurring instances already
+    seriesKey: id,
     title: event.title,
     start: event.start,
     end: event.end ?? event.start,
