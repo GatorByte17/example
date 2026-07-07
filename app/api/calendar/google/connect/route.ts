@@ -8,7 +8,8 @@ export async function GET(req: Request) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
-    return NextResponse.redirect(new URL("/?error=google_not_configured", req.url));
+    const base = process.env.NEXT_PUBLIC_APP_URL ?? req.url;
+    return NextResponse.redirect(new URL("/?error=google_not_configured", base));
   }
 
   return NextResponse.redirect(getGoogleAuthUrl());
