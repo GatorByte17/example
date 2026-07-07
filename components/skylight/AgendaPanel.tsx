@@ -56,7 +56,7 @@ function Section({
 }
 
 export default function AgendaPanel() {
-  const { events, isLoading } = useCalendar();
+  const { events, connected, isLoading } = useCalendar();
 
   const today = startOfDay(new Date());
   const tomorrow = addDays(today, 1);
@@ -80,6 +80,15 @@ export default function AgendaPanel() {
           <Section label="Today" events={todayEvents} />
           <Section label="Tomorrow" events={tomorrowEvents} />
         </>
+      )}
+
+      {connected && !connected.google && (
+        <a
+          href="/api/calendar/google/connect"
+          className="mt-auto flex items-center justify-center gap-2 text-xs font-semibold text-[var(--teal)] hover:text-white hover:bg-[var(--teal)] border border-[var(--teal)]/40 rounded-full px-3 py-2 transition"
+        >
+          Connect Google Calendar
+        </a>
       )}
     </div>
   );

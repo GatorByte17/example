@@ -1,6 +1,7 @@
 import { google } from "googleapis";
 import { CalendarEvent } from "./types";
 import { getSetting, setSetting } from "@/lib/db/queries/settings";
+import { GOOGLE_EVENT_COLORS } from "@/lib/colors";
 
 function getOAuth2Client() {
   return new google.auth.OAuth2(
@@ -63,7 +64,7 @@ export async function fetchGoogleEvents(
     start: item.start?.dateTime ?? item.start?.date ?? now.toISOString(),
     end: item.end?.dateTime ?? item.end?.date ?? now.toISOString(),
     allDay: !item.start?.dateTime,
-    color: item.colorId ? `#${item.colorId}` : undefined,
+    color: item.colorId ? GOOGLE_EVENT_COLORS[item.colorId] : undefined,
     calendarName: "Google Calendar",
     source: "google",
   }));

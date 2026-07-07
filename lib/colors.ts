@@ -10,6 +10,21 @@ export const MEMBER_COLORS = [
   "#5c7099", // slate
 ];
 
+// Google Calendar event colorId (1–11) → actual hex palette
+export const GOOGLE_EVENT_COLORS: Record<string, string> = {
+  "1": "#7986cb",
+  "2": "#33b679",
+  "3": "#8e24aa",
+  "4": "#e67c73",
+  "5": "#f6bf26",
+  "6": "#f4511e",
+  "7": "#039be5",
+  "8": "#616161",
+  "9": "#3f51b5",
+  "10": "#0b8043",
+  "11": "#d50000",
+};
+
 // 15%-opacity tint of a hex color, for chip backgrounds
 export function tint(hex: string, alpha = 0.15): string {
   const r = parseInt(hex.slice(1, 3), 16);
