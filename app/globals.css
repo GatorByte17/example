@@ -35,6 +35,15 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Phones scroll; iPad/desktop stay a locked full-screen kiosk */
+@media (max-width: 767px) {
+  html,
+  body {
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
 /* ─── Sky card — soft white card on cream ────────────────────────────── */
 .sky-card {
   background: var(--surface);

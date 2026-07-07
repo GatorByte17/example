@@ -20,30 +20,30 @@ export default function SkyLayout() {
   }, [accentColor]);
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-[var(--background)]">
-      <div className="h-full flex flex-col">
+    <div className="relative min-h-screen w-full md:h-screen md:overflow-hidden bg-[var(--background)]">
+      <div className="min-h-screen md:min-h-0 md:h-full flex flex-col">
         <SkyHeader />
 
-        {/* Main 3-column grid */}
+        {/* Naturally-sized scrolling column on phones; height-locked 3-column kiosk on md+ */}
         <div
-          className="flex-1 min-h-0 grid gap-4 p-4 pt-0
+          className="md:flex-1 md:min-h-0 grid gap-3 p-3 pt-0
                      grid-cols-1
-                     lg:grid-cols-[280px_1fr_280px]
-                     landscape:grid-cols-[280px_1fr_280px]"
+                     md:landscape:grid-cols-[260px_1fr_260px]
+                     lg:grid-cols-[280px_1fr_280px]"
         >
-          {/* Left — Agenda (shows after calendar on portrait) */}
-          <div className="order-2 lg:order-1 landscape:order-1 min-h-0">
+          {/* Left — Agenda (after calendar when stacked) */}
+          <div className="order-2 md:landscape:order-1 lg:order-1 md:min-h-0">
             <AgendaPanel />
           </div>
 
-          {/* Center — Month calendar + countdown */}
-          <div className="order-1 lg:order-2 landscape:order-2 flex flex-col gap-4 min-h-0">
+          {/* Center — Calendar + countdown */}
+          <div className="order-1 md:landscape:order-2 lg:order-2 flex flex-col gap-3 md:min-h-0">
             <MonthCalendar />
             <CountdownBanner />
           </div>
 
           {/* Right — Chores */}
-          <div className="order-3 min-h-0">
+          <div className="order-3 md:min-h-0">
             <TodoPanel />
           </div>
         </div>

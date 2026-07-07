@@ -5,16 +5,33 @@ import {
   format,
   addMonths,
   subMonths,
+  addWeeks,
+  subWeeks,
+  addDays,
   startOfMonth,
   endOfMonth,
+  startOfWeek,
+  endOfWeek,
   isSameMonth,
+  isSameWeek,
+  isSameDay,
+  parseISO,
 } from "date-fns";
 import { useCalendar } from "@/hooks/useCalendar";
+import { useThemeStore, CalendarView } from "@/store/themeStore";
 import { eventCoversDay } from "@/lib/events";
 import { tint } from "@/lib/colors";
 import type { CalendarEvent } from "@/lib/integrations/types";
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+function chipColors(color?: string) {
+  const c = color ?? "var(--accent)";
+  return {
+    backgroundColor: c.startsWith("var(") ? "rgba(255, 107, 87, 0.15)" : tint(c),
+    color: c,
+  };
+}
 
 function buildCells(year: number, month: number): (number | null)[] {
   const firstDow = new Date(year, month, 1).getDay();
@@ -27,27 +44,20 @@ function buildCells(year: number, month: number): (number | null)[] {
   return cells;
 }
 
-function eventsForDay(
-  events: CalendarEvent[],
-  year: number,
-  month: number,
-  day: number
-): CalendarEvent[] {
-  const target = new Date(year, month, day);
-  return events.filter((e) => eventCoversDay(e, target));
+function sortedEventsForDay(events: CalendarEvent[], day: Date): CalendarEvent[] {
+  return events
+    .filter((e) => eventCoversDay(e, day))
+    .sort((a, b) => a.start.localeCompare(b.start));
 }
 
-function EventChip({ event }: { event: CalendarEvent }) {
-  const color = event.color ?? "var(--accent)";
-  const isVar = color.startsWith("var(");
+/* ── Month view ─────────────────────────────────────────────────────── */
+
+function MonthChip({ event }: { event: CalendarEvent }) {
   return (
     <div
       className="w-full px-1.5 py-0.5 rounded-md text-[10px] font-semibold truncate leading-tight
-                 hidden landscape:block lg:block"
-      style={{
-        backgroundColor: isVar ? "rgba(255, 107, 87, 0.15)" : tint(color),
-        color,
-      }}
+                 hidden md:landscape:block lg:block"
+      style={chipColors(event.color)}
       title={event.title}
     >
       {event.title}
@@ -55,14 +65,17 @@ function EventChip({ event }: { event: CalendarEvent }) {
   );
 }
 
-interface DayCellProps {
+function MonthDayCell({
+  day,
+  isToday,
+  isWeekend,
+  events,
+}: {
   day: number | null;
   isToday: boolean;
   isWeekend: boolean;
   events: CalendarEvent[];
-}
-
-function DayCell({ day, isToday, isWeekend, events }: DayCellProps) {
+}) {
   const chips = events.slice(0, 2);
   const extra = events.length - chips.length;
 
@@ -91,15 +104,15 @@ function DayCell({ day, isToday, isWeekend, events }: DayCellProps) {
       {events.length > 0 && (
         <div className="flex flex-col gap-0.5 min-h-0 overflow-hidden">
           {chips.map((e) => (
-            <EventChip key={e.id} event={e} />
+            <MonthChip key={e.id} event={e} />
           ))}
           {extra > 0 && (
-            <div className="text-[9px] font-semibold text-[var(--muted)] px-1.5 hidden landscape:block lg:block">
+            <div className="text-[9px] font-semibold text-[var(--muted)] px-1.5 hidden md:landscape:block lg:block">
               +{extra} more
             </div>
           )}
-          {/* Dots fallback for portrait / narrow layouts */}
-          <div className="flex gap-0.5 flex-wrap justify-center landscape:hidden lg:hidden">
+          {/* Dots fallback for narrow layouts */}
+          <div className="flex gap-0.5 flex-wrap justify-center md:landscape:hidden lg:hidden">
             {events.slice(0, 4).map((e, i) => (
               <div
                 key={i}
@@ -114,19 +127,7 @@ function DayCell({ day, isToday, isWeekend, events }: DayCellProps) {
   );
 }
 
-export default function MonthCalendar() {
-  const [viewDate, setViewDate] = useState(new Date());
-
-  // Fetch exactly the visible month (past days included)
-  const range = useMemo(
-    () => ({
-      start: startOfMonth(viewDate).toISOString(),
-      end: endOfMonth(viewDate).toISOString(),
-    }),
-    [viewDate]
-  );
-  const { events } = useCalendar(range);
-
+function MonthGrid({ viewDate, events }: { viewDate: Date; events: CalendarEvent[] }) {
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
   const today = new Date();
@@ -134,41 +135,7 @@ export default function MonthCalendar() {
   const weekCount = cells.length / 7;
 
   return (
-    <div className="sky-card p-4 flex flex-col gap-3 flex-1 min-h-0">
-      {/* Month navigation */}
-      <div className="flex items-center justify-between">
-        <button
-          onClick={() => setViewDate((d) => subMonths(d, 1))}
-          className="w-9 h-9 flex items-center justify-center rounded-full bg-[var(--surface-2)] text-[var(--foreground)] hover:bg-[var(--accent)] hover:text-white transition text-xl font-light"
-          aria-label="Previous month"
-        >
-          ‹
-        </button>
-
-        <div className="flex items-center gap-2">
-          <h2 className="text-lg font-bold text-[var(--foreground)]">
-            {format(viewDate, "MMMM yyyy")}
-          </h2>
-          {!isSameMonth(viewDate, today) && (
-            <button
-              onClick={() => setViewDate(new Date())}
-              className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition"
-            >
-              Today
-            </button>
-          )}
-        </div>
-
-        <button
-          onClick={() => setViewDate((d) => addMonths(d, 1))}
-          className="w-9 h-9 flex items-center justify-center rounded-full bg-[var(--surface-2)] text-[var(--foreground)] hover:bg-[var(--accent)] hover:text-white transition text-xl font-light"
-          aria-label="Next month"
-        >
-          ›
-        </button>
-      </div>
-
-      {/* Day-of-week headers */}
+    <>
       <div className="grid grid-cols-7 text-center flex-none">
         {DAY_LABELS.map((d) => (
           <div
@@ -180,22 +147,18 @@ export default function MonthCalendar() {
         ))}
       </div>
 
-      {/* Day grid */}
       <div
-        className="grid grid-cols-7 flex-1 min-h-0 gap-0.5"
+        className="grid grid-cols-7 flex-1 min-h-[300px] md:min-h-0 gap-0.5"
         style={{ gridTemplateRows: `repeat(${weekCount}, minmax(0, 1fr))` }}
       >
         {cells.map((day, i) => {
-          const dayEvents = day ? eventsForDay(events, year, month, day) : [];
-          const isToday =
-            day !== null &&
-            today.getFullYear() === year &&
-            today.getMonth() === month &&
-            today.getDate() === day;
+          const target = day !== null ? new Date(year, month, day) : null;
+          const dayEvents = target ? sortedEventsForDay(events, target) : [];
+          const isToday = target !== null && isSameDay(target, today);
           const dow = i % 7;
 
           return (
-            <DayCell
+            <MonthDayCell
               key={i}
               day={day}
               isToday={isToday}
@@ -205,6 +168,177 @@ export default function MonthCalendar() {
           );
         })}
       </div>
+    </>
+  );
+}
+
+/* ── Week view ──────────────────────────────────────────────────────── */
+
+function WeekEventChip({ event }: { event: CalendarEvent }) {
+  return (
+    <div
+      className="px-2 py-1 rounded-lg text-[11px] leading-tight"
+      style={chipColors(event.color)}
+      title={event.title}
+    >
+      <div className="font-bold truncate">{event.title}</div>
+      {!event.allDay && (
+        <div className="opacity-75 font-medium">
+          {format(parseISO(event.start), "h:mm a")}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function WeekGrid({ viewDate, events }: { viewDate: Date; events: CalendarEvent[] }) {
+  const weekStart = startOfWeek(viewDate);
+  const today = new Date();
+  const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+
+  return (
+    <div className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-7 gap-1.5 overflow-y-auto scrollbar-none">
+      {days.map((day) => {
+        const dayEvents = sortedEventsForDay(events, day);
+        const isToday = isSameDay(day, today);
+
+        return (
+          <div
+            key={day.toISOString()}
+            className={[
+              "flex md:flex-col gap-2 md:gap-1.5 rounded-xl p-2 min-w-0 md:min-h-0",
+              isToday ? "bg-[var(--surface-2)]" : "",
+            ].join(" ")}
+          >
+            {/* Day header — left column on phones, top on wider screens */}
+            <div className="flex md:flex-col items-center gap-1 flex-none w-12 md:w-auto">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--teal)]">
+                {format(day, "EEE")}
+              </span>
+              <span
+                className={[
+                  "w-7 h-7 flex items-center justify-center rounded-full text-sm font-semibold leading-none",
+                  isToday
+                    ? "bg-[var(--accent)] text-white font-bold shadow-sm"
+                    : "text-[var(--foreground)]",
+                ].join(" ")}
+              >
+                {format(day, "d")}
+              </span>
+            </div>
+
+            <div className="flex flex-col gap-1 flex-1 min-w-0 md:overflow-y-auto scrollbar-none">
+              {dayEvents.length === 0 ? (
+                <span className="text-[11px] text-[var(--muted)]/60 italic md:text-center py-1">
+                  —
+                </span>
+              ) : (
+                dayEvents.map((e) => <WeekEventChip key={e.id} event={e} />)
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ── Card with view toggle + navigation ─────────────────────────────── */
+
+export default function MonthCalendar() {
+  const [viewDate, setViewDate] = useState(new Date());
+  const { calendarView, setCalendarView } = useThemeStore();
+
+  const range = useMemo(() => {
+    if (calendarView === "week") {
+      return {
+        start: startOfWeek(viewDate).toISOString(),
+        end: endOfWeek(viewDate).toISOString(),
+      };
+    }
+    return {
+      start: startOfMonth(viewDate).toISOString(),
+      end: endOfMonth(viewDate).toISOString(),
+    };
+  }, [viewDate, calendarView]);
+
+  const { events } = useCalendar(range);
+
+  const today = new Date();
+  const onCurrent =
+    calendarView === "week"
+      ? isSameWeek(viewDate, today)
+      : isSameMonth(viewDate, today);
+
+  const title =
+    calendarView === "week"
+      ? `${format(startOfWeek(viewDate), "MMM d")} – ${format(endOfWeek(viewDate), "MMM d")}`
+      : format(viewDate, "MMMM yyyy");
+
+  function step(dir: 1 | -1) {
+    setViewDate((d) =>
+      calendarView === "week"
+        ? dir === 1 ? addWeeks(d, 1) : subWeeks(d, 1)
+        : dir === 1 ? addMonths(d, 1) : subMonths(d, 1)
+    );
+  }
+
+  return (
+    <div className="sky-card p-3 sm:p-4 flex flex-col gap-3 flex-1 min-h-0">
+      {/* Navigation + view toggle */}
+      <div className="flex items-center justify-between gap-2">
+        <button
+          onClick={() => step(-1)}
+          className="w-9 h-9 flex items-center justify-center rounded-full bg-[var(--surface-2)] text-[var(--foreground)] hover:bg-[var(--accent)] hover:text-white transition text-xl font-light flex-shrink-0"
+          aria-label={calendarView === "week" ? "Previous week" : "Previous month"}
+        >
+          ‹
+        </button>
+
+        <div className="flex items-center gap-2 flex-wrap justify-center min-w-0">
+          <h2 className="text-base sm:text-lg font-bold text-[var(--foreground)] whitespace-nowrap">
+            {title}
+          </h2>
+          {!onCurrent && (
+            <button
+              onClick={() => setViewDate(new Date())}
+              className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition"
+            >
+              Today
+            </button>
+          )}
+          <div className="flex bg-[var(--surface-2)] rounded-full p-0.5">
+            {(["month", "week"] as CalendarView[]).map((v) => (
+              <button
+                key={v}
+                onClick={() => setCalendarView(v)}
+                className={[
+                  "px-2.5 py-1 rounded-full text-[11px] font-semibold capitalize transition",
+                  calendarView === v
+                    ? "bg-[var(--surface)] text-[var(--foreground)] shadow-sm"
+                    : "text-[var(--muted)]",
+                ].join(" ")}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <button
+          onClick={() => step(1)}
+          className="w-9 h-9 flex items-center justify-center rounded-full bg-[var(--surface-2)] text-[var(--foreground)] hover:bg-[var(--accent)] hover:text-white transition text-xl font-light flex-shrink-0"
+          aria-label={calendarView === "week" ? "Next week" : "Next month"}
+        >
+          ›
+        </button>
+      </div>
+
+      {calendarView === "week" ? (
+        <WeekGrid viewDate={viewDate} events={events} />
+      ) : (
+        <MonthGrid viewDate={viewDate} events={events} />
+      )}
     </div>
   );
 }
