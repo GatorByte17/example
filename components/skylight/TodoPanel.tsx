@@ -4,13 +4,9 @@ import { useState, FormEvent } from "react";
 import { useTodos } from "@/hooks/useTodos";
 import { useMembers } from "@/hooks/useMembers";
 import { SkeletonLoader } from "@/components/ui/SkeletonLoader";
+import { MEMBER_COLORS } from "@/lib/colors";
 import type { Todo } from "@/lib/db/queries/todos";
 import type { Member } from "@/lib/db/queries/members";
-
-const MEMBER_COLORS = [
-  "#6366f1","#f43f5e","#10b981","#f59e0b",
-  "#0ea5e9","#8b5cf6","#f97316","#14b8a6",
-];
 
 function TodoItem({
   todo,
@@ -23,25 +19,26 @@ function TodoItem({
   onDelete: (id: number) => void;
   memberColor?: string;
 }) {
+  const color = memberColor ?? "var(--teal)";
   return (
     <div className="flex items-center gap-2.5 py-1.5 group">
       <button
         onClick={() => onToggle(todo.id)}
-        className="flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition"
-        style={{ borderColor: memberColor ?? "rgba(255,255,255,0.3)" }}
+        className="flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition"
+        style={{
+          borderColor: color,
+          backgroundColor: todo.done ? color : "transparent",
+        }}
         aria-label={todo.done ? "Mark incomplete" : "Mark complete"}
       >
-        {todo.done && (
-          <div
-            className="w-2.5 h-2.5 rounded-full"
-            style={{ backgroundColor: memberColor ?? "rgba(255,255,255,0.5)" }}
-          />
-        )}
+        {todo.done && <span className="text-white text-xs font-bold">✓</span>}
       </button>
 
       <span
-        className={`flex-1 text-sm min-w-0 truncate transition ${
-          todo.done ? "text-white/30 line-through" : "text-white/80"
+        className={`flex-1 text-sm font-medium min-w-0 truncate transition ${
+          todo.done
+            ? "text-[var(--muted)] line-through"
+            : "text-[var(--foreground)]"
         }`}
       >
         {todo.title}
@@ -49,7 +46,7 @@ function TodoItem({
 
       <button
         onClick={() => onDelete(todo.id)}
-        className="opacity-0 group-hover:opacity-100 text-white/30 hover:text-white/60 transition text-xs px-1"
+        className="opacity-0 group-hover:opacity-100 text-[var(--muted)] hover:text-[var(--accent)] transition text-xs px-1"
         aria-label="Delete chore"
       >
         ✕
@@ -73,14 +70,23 @@ function MemberSection({
 
   return (
     <div>
-      {member && (
-        <div className="flex items-center gap-1.5 mb-1.5">
-          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: member.color }} />
-          <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">
-            {member.name}
+      <div className="flex items-center gap-2 mb-1.5">
+        {member ? (
+          <>
+            <div
+              className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0"
+              style={{ backgroundColor: member.color }}
+            >
+              {member.initials}
+            </div>
+            <p className="text-xs font-bold text-[var(--foreground)]">{member.name}</p>
+          </>
+        ) : (
+          <p className="text-[11px] font-bold uppercase tracking-widest text-[var(--teal)]">
+            Everyone
           </p>
-        </div>
-      )}
+        )}
+      </div>
       {todos.map((t) => (
         <TodoItem
           key={t.id}
@@ -128,13 +134,16 @@ export default function TodoPanel() {
     byMember.get(mid)!.push(t);
   }
 
+  const inputClass =
+    "bg-[var(--surface-2)] border border-[var(--border)] rounded-xl text-[var(--foreground)] placeholder-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/40 transition";
+
   return (
-    <div className="glass-card p-4 flex flex-col gap-3 overflow-y-auto scrollbar-none min-h-0">
+    <div className="sky-card p-4 flex flex-col gap-3 overflow-y-auto scrollbar-none min-h-0 h-full">
       <div className="flex items-center justify-between">
-        <h2 className="text-xs font-bold uppercase tracking-widest text-white/40">Chores</h2>
+        <h2 className="text-base font-bold text-[var(--foreground)]">Chores</h2>
         <button
           onClick={() => setShowAddMember(!showAddMember)}
-          className="text-[10px] text-white/30 hover:text-white/60 transition"
+          className="text-[11px] font-semibold text-[var(--teal)] hover:text-[var(--accent)] transition"
           title="Add family member"
         >
           + Person
@@ -147,11 +156,11 @@ export default function TodoPanel() {
             value={newMemberName}
             onChange={(e) => setNewMemberName(e.target.value)}
             placeholder="Name"
-            className="flex-1 bg-white/10 border border-white/10 rounded-lg px-2 py-1 text-xs text-white placeholder-white/30 focus:outline-none focus:border-white/30"
+            className={`flex-1 px-2.5 py-1.5 text-xs min-w-0 ${inputClass}`}
           />
           <button
             type="submit"
-            className="px-2 py-1 rounded-lg bg-[var(--accent)]/80 text-white text-xs"
+            className="px-3 py-1.5 rounded-xl bg-[var(--teal)] text-white text-xs font-semibold hover:opacity-90 transition"
           >
             Add
           </button>
@@ -184,20 +193,26 @@ export default function TodoPanel() {
           )}
 
           {todos.length === 0 && (
-            <p className="text-sm text-white/30 italic">No chores added</p>
+            <div className="flex flex-col items-center gap-1 py-4 text-center">
+              <span className="text-3xl">🎉</span>
+              <p className="text-sm text-[var(--muted)] font-medium">All done!</p>
+            </div>
           )}
         </div>
       )}
 
       {/* Add chore form */}
-      <form onSubmit={handleAddTodo} className="flex flex-col gap-1.5 mt-auto pt-2 border-t border-white/10">
+      <form
+        onSubmit={handleAddTodo}
+        className="flex flex-col gap-1.5 mt-auto pt-3 border-t border-[var(--border)]"
+      >
         {members.length > 0 && (
           <select
             value={selectedMemberId}
             onChange={(e) =>
               setSelectedMemberId(e.target.value === "" ? "" : Number(e.target.value))
             }
-            className="bg-white/10 border border-white/10 rounded-lg px-2 py-1 text-xs text-white focus:outline-none focus:border-white/30"
+            className={`px-2.5 py-1.5 text-xs ${inputClass}`}
           >
             <option value="">Everyone</option>
             {members.map((m) => (
@@ -212,11 +227,11 @@ export default function TodoPanel() {
             value={newTitle}
             onChange={(e) => setNewTitle(e.target.value)}
             placeholder="Add a chore…"
-            className="flex-1 bg-white/10 border border-white/10 rounded-lg px-2.5 py-1.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-white/30 min-w-0"
+            className={`flex-1 px-3 py-2 text-sm min-w-0 ${inputClass}`}
           />
           <button
             type="submit"
-            className="px-3 py-1.5 rounded-lg bg-[var(--accent)]/80 hover:bg-[var(--accent)] text-white text-sm transition"
+            className="px-3.5 py-2 rounded-xl bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white text-sm font-bold transition"
           >
             +
           </button>

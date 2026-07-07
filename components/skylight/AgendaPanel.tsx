@@ -12,16 +12,22 @@ function timeLabel(event: CalendarEvent): string {
 
 function EventRow({ event }: { event: CalendarEvent }) {
   return (
-    <div className="flex items-start gap-2.5 py-2 border-b border-white/5 last:border-0">
+    <div className="flex items-start gap-2.5 py-2 border-b border-[var(--border)] last:border-0">
       <div
         className="w-1 self-stretch rounded-full flex-shrink-0 mt-0.5"
         style={{ backgroundColor: event.color ?? "var(--accent)" }}
       />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-white truncate">{event.title}</p>
-        <p className="text-xs text-white/50">{timeLabel(event)}</p>
+        <p className="text-sm font-semibold text-[var(--foreground)] truncate">
+          {event.title}
+        </p>
+        <span className="inline-block text-[11px] font-medium text-[var(--muted)] bg-[var(--surface-2)] rounded-full px-2 py-0.5 mt-1">
+          {timeLabel(event)}
+        </span>
         {event.calendarName && (
-          <p className="text-[10px] text-white/30 truncate">{event.calendarName}</p>
+          <p className="text-[10px] text-[var(--muted)]/70 truncate mt-0.5">
+            {event.calendarName}
+          </p>
         )}
       </div>
     </div>
@@ -37,11 +43,11 @@ function Section({
 }) {
   return (
     <div>
-      <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2">
+      <p className="text-[11px] font-bold uppercase tracking-widest text-[var(--teal)] mb-2">
         {label}
       </p>
       {events.length === 0 ? (
-        <p className="text-sm text-white/30 italic py-1">No events</p>
+        <p className="text-sm text-[var(--muted)] italic py-1">No events</p>
       ) : (
         events.map((e) => <EventRow key={e.id} event={e} />)
       )}
@@ -64,10 +70,8 @@ export default function AgendaPanel() {
     .sort((a, b) => a.start.localeCompare(b.start));
 
   return (
-    <div className="glass-card p-4 flex flex-col gap-4 overflow-y-auto scrollbar-none min-h-0">
-      <h2 className="text-xs font-bold uppercase tracking-widest text-white/40">
-        Agenda
-      </h2>
+    <div className="sky-card p-4 flex flex-col gap-4 overflow-y-auto scrollbar-none min-h-0 h-full">
+      <h2 className="text-base font-bold text-[var(--foreground)]">Agenda</h2>
 
       {isLoading ? (
         <SkeletonLoader count={3} />

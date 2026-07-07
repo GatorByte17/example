@@ -39,4 +39,3 @@ next-env.d.ts
 /data/dashboard.db
 /data/dashboard.db-shm
 /data/dashboard.db-wal
-/data/photos/

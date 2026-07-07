@@ -17,22 +17,27 @@ export default function CountdownBanner() {
 
   const next = upcoming[0];
   const days = differenceInDays(startOfDay(parseISO(next.start)), today);
+  const color = next.color ?? "var(--accent)";
 
   return (
     <div
-      className="glass-card px-4 py-3 flex items-center gap-3"
-      style={{ borderLeft: `3px solid ${next.color ?? "var(--accent)"}` }}
+      className="sky-card px-4 py-3 flex items-center gap-3 flex-none"
+      style={{ borderLeft: `5px solid ${color}` }}
     >
-      <span className="text-xl flex-shrink-0">📅</span>
+      <span className="text-2xl flex-shrink-0">🗓️</span>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-white truncate">{next.title}</p>
-        <p className="text-xs text-white/50">
-          {days === 1 ? "Tomorrow" : `In ${days} days`}
+        <p className="text-sm font-bold text-[var(--foreground)] truncate">{next.title}</p>
+        <p className="text-xs text-[var(--muted)] font-medium">
+          {days === 1 ? "Tomorrow!" : `Coming up in ${days} days`}
         </p>
       </div>
       <div className="text-right flex-shrink-0">
-        <p className="text-2xl font-bold text-white leading-none">{days}</p>
-        <p className="text-[10px] text-white/40 uppercase tracking-wide">days</p>
+        <p className="text-3xl font-extrabold leading-none" style={{ color }}>
+          {days}
+        </p>
+        <p className="text-[10px] text-[var(--muted)] uppercase tracking-wide font-semibold">
+          days
+        </p>
       </div>
     </div>
   );

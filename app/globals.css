@@ -2,25 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ─── CSS custom properties ─────────────────────────────────────────── */
+/* ─── CSS custom properties — warm Skylight palette ─────────────────── */
 :root {
-  --background:    #0a0a0f;
-  --surface:       rgba(255, 255, 255, 0.08);
-  --surface-2:     rgba(255, 255, 255, 0.12);
-  --foreground:    #f0f0f5;
-  --muted:         rgba(240, 240, 245, 0.45);
-  --accent:        #6366f1;
-  --accent-hover:  #5558e8;
-  --border:        rgba(255, 255, 255, 0.12);
-}
-
-html.light {
-  --background:    #f0f0f7;
-  --surface:       rgba(255, 255, 255, 0.65);
-  --surface-2:     rgba(255, 255, 255, 0.85);
-  --foreground:    #0a0a15;
-  --muted:         rgba(10, 10, 21, 0.45);
-  --border:        rgba(0, 0, 0, 0.10);
+  --background:    #faf6ef;
+  --surface:       #ffffff;
+  --surface-2:     #f4eee3;
+  --foreground:    #2f3542;
+  --muted:         #8b93a1;
+  --accent:        #ff6b57;
+  --accent-hover:  #f05a46;
+  --teal:          #2aa8a0;
+  --border:        rgba(47, 53, 66, 0.08);
 }
 
 /* ─── Base ───────────────────────────────────────────────────────────── */
@@ -43,38 +35,19 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* ─── Glass card component ───────────────────────────────────────────── */
-.glass-card {
+/* ─── Sky card — soft white card on cream ────────────────────────────── */
+.sky-card {
   background: var(--surface);
-  backdrop-filter: blur(16px) saturate(150%);
-  -webkit-backdrop-filter: blur(16px) saturate(150%);
   border: 1px solid var(--border);
-  border-radius: 1rem;
-}
-
-/* ─── Dashboard shell — full bleed gradient fallback ─────────────────── */
-.dashboard-shell {
-  background:
-    radial-gradient(ellipse 80% 60% at 20% 20%, rgba(99, 102, 241, 0.14) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 50% at 80% 80%, rgba(168, 85, 247, 0.09) 0%, transparent 60%),
-    var(--background);
-}
-
-/* ─── Skylight shell — dark background (photo shows on top) ─────────── */
-.sky-shell {
-  background: #0a0a0f;
-}
-
-/* ─── Skylight header — top gradient for text contrast ──────────────── */
-.sky-header {
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.45) 0%, transparent 100%);
+  border-radius: 1.25rem;
+  box-shadow: 0 2px 12px rgba(47, 53, 66, 0.07);
 }
 
 /* ─── react-grid-layout overrides ───────────────────────────────────── */
 .react-grid-item.react-grid-placeholder {
   background: var(--accent);
   opacity: 0.15;
-  border-radius: 1rem;
+  border-radius: 1.25rem;
 }
 
 .react-resizable-handle::after {

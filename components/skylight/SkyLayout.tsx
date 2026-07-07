@@ -2,7 +2,6 @@
 
 import { useEffect } from "react";
 import { useThemeStore } from "@/store/themeStore";
-import PhotoBackground from "./PhotoBackground";
 import SkyHeader from "./SkyHeader";
 import AgendaPanel from "./AgendaPanel";
 import MonthCalendar from "./MonthCalendar";
@@ -14,34 +13,31 @@ export default function SkyLayout() {
 
   useEffect(() => {
     const root = document.documentElement;
-    root.classList.add("dark");
+    root.classList.remove("dark");
+    root.classList.add("light");
     root.style.setProperty("--accent", accentColor);
     root.style.setProperty("--accent-hover", accentColor + "cc");
   }, [accentColor]);
 
   return (
-    <div className="sky-shell relative h-screen w-screen overflow-hidden">
-      {/* Full-bleed photo slideshow background */}
-      <PhotoBackground />
-
-      {/* Content layer */}
-      <div className="relative z-10 h-full flex flex-col">
+    <div className="relative h-screen w-screen overflow-hidden bg-[var(--background)]">
+      <div className="h-full flex flex-col">
         <SkyHeader />
 
         {/* Main 3-column grid */}
         <div
-          className="flex-1 min-h-0 grid gap-3 p-3 pt-0
+          className="flex-1 min-h-0 grid gap-4 p-4 pt-0
                      grid-cols-1
-                     lg:grid-cols-[260px_1fr_260px]
-                     landscape:grid-cols-[260px_1fr_260px]"
+                     lg:grid-cols-[280px_1fr_280px]
+                     landscape:grid-cols-[280px_1fr_280px]"
         >
-          {/* Left — Agenda (reordered to show after calendar on portrait) */}
+          {/* Left — Agenda (shows after calendar on portrait) */}
           <div className="order-2 lg:order-1 landscape:order-1 min-h-0">
             <AgendaPanel />
           </div>
 
           {/* Center — Month calendar + countdown */}
-          <div className="order-1 lg:order-2 landscape:order-2 flex flex-col gap-3 min-h-0">
+          <div className="order-1 lg:order-2 landscape:order-2 flex flex-col gap-4 min-h-0">
             <MonthCalendar />
             <CountdownBanner />
           </div>
