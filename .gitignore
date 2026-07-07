@@ -37,4 +37,6 @@ next-env.d.ts
 
 # runtime data
 /data/dashboard.db
+/data/dashboard.db-shm
+/data/dashboard.db-wal
 /data/photos/
