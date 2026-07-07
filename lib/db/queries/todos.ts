@@ -51,6 +51,14 @@ export function deleteTodo(id: number): void {
   db.prepare("DELETE FROM todos WHERE id = ?").run(id);
 }
 
+export function deleteCompleted(listName = "default"): number {
+  const db = getDb();
+  const result = db
+    .prepare("DELETE FROM todos WHERE list_name = ? AND done = 1")
+    .run(listName);
+  return result.changes;
+}
+
 export function getTodoById(id: number): Todo | null {
   const db = getDb();
   const row = db.prepare("SELECT * FROM todos WHERE id = ?").get(id) as TodoRow | undefined;

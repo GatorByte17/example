@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { format } from "date-fns";
 import { useClock } from "@/hooks/useClock";
 import { useWeather } from "@/hooks/useWeather";
@@ -56,8 +57,8 @@ export default function SkyHeader() {
         </div>
       </div>
 
-      {/* Weather chip */}
-      <div className="flex justify-end flex-1 min-w-0">
+      {/* Weather chip + settings */}
+      <div className="flex items-center justify-end gap-2 flex-1 min-w-0">
         {weather?.current ? (
           <div className="flex items-center gap-2.5 bg-[var(--surface)] border border-[var(--border)] rounded-full pl-3 pr-4 py-2 shadow-sm">
             <span className="text-2xl" aria-hidden>
@@ -72,9 +73,14 @@ export default function SkyHeader() {
               </div>
             </div>
           </div>
-        ) : (
-          <div className="w-16" />
-        )}
+        ) : null}
+        <Link
+          href="/settings"
+          className="w-10 h-10 rounded-full bg-[var(--surface)] border border-[var(--border)] shadow-sm flex items-center justify-center text-lg hover:bg-[var(--surface-2)] transition flex-shrink-0"
+          aria-label="Settings"
+        >
+          ⚙️
+        </Link>
       </div>
     </header>
   );

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { getTodos, addTodo, toggleTodo, deleteTodo } from "@/lib/db/queries/todos";
+import { getTodos, addTodo, toggleTodo, deleteTodo, deleteCompleted } from "@/lib/db/queries/todos";
 import { runMigrations } from "@/lib/db/schema";
 
 function ensureDb() {
@@ -41,6 +41,10 @@ export async function DELETE(req: Request) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   ensureDb();
   const { searchParams } = new URL(req.url);
+  if (searchParams.get("completed") === "1") {
+    const removed = deleteCompleted(searchParams.get("list") ?? "default");
+    return NextResponse.json({ ok: true, removed });
+  }
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
   deleteTodo(Number(id));

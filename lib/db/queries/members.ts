@@ -43,5 +43,9 @@ export function updateMember(id: number, name?: string, color?: string): void {
 
 export function deleteMember(id: number): void {
   const db = getDb();
-  db.prepare("DELETE FROM members WHERE id = ?").run(id);
+  // Unassign this member's chores rather than orphaning them
+  db.transaction(() => {
+    db.prepare("UPDATE todos SET member_id = NULL WHERE member_id = ?").run(id);
+    db.prepare("DELETE FROM members WHERE id = ?").run(id);
+  })();
 }

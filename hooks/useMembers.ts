@@ -20,8 +20,19 @@ export function useMembers() {
     await mutate();
   }
 
+  async function updateMember(id: number, patch: { name?: string; color?: string }) {
+    const res = await fetch("/api/members", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, ...patch }),
+    });
+    if (!res.ok) throw new Error(`Failed to update member (HTTP ${res.status})`);
+    await mutate();
+  }
+
   async function deleteMember(id: number) {
-    await fetch(`/api/members?id=${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/members?id=${id}`, { method: "DELETE" });
+    if (!res.ok) throw new Error(`Failed to delete member (HTTP ${res.status})`);
     await mutate();
   }
 
@@ -30,6 +41,7 @@ export function useMembers() {
     error,
     isLoading,
     addMember,
+    updateMember,
     deleteMember,
   };
 }

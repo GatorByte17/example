@@ -2,18 +2,22 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { fetchWeather } from "@/lib/integrations/weather";
+import { resolveLocation } from "@/lib/location";
+import { runMigrations } from "@/lib/db/schema";
 
-export async function GET(req: Request) {
+function ensureDb() {
+  try { runMigrations(); } catch { /* already initialized */ }
+}
+
+export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  ensureDb();
 
-  const { searchParams } = new URL(req.url);
-  const lat = parseFloat(searchParams.get("lat") ?? process.env.NEXT_PUBLIC_LATITUDE ?? "37.7749");
-  const lon = parseFloat(searchParams.get("lon") ?? process.env.NEXT_PUBLIC_LONGITUDE ?? "-122.4194");
-  const name = searchParams.get("name") ?? process.env.NEXT_PUBLIC_LOCATION_NAME ?? "Home";
+  const { latitude, longitude, locationName } = resolveLocation();
 
   try {
-    const data = await fetchWeather(lat, lon, name);
+    const data = await fetchWeather(parseFloat(latitude), parseFloat(longitude), locationName);
     return NextResponse.json(data);
   } catch (err) {
     console.error("Weather fetch error:", err);

@@ -42,6 +42,14 @@ export function useTodos(listName = "default") {
     await mutate();
   }
 
+  async function clearCompleted() {
+    const res = await fetch(`/api/todos?completed=1&list=${listName}`, {
+      method: "DELETE",
+    });
+    if (!res.ok) throw new Error(`Failed to clear completed (HTTP ${res.status})`);
+    await mutate();
+  }
+
   return {
     todos: data ?? [],
     error,
@@ -49,5 +57,6 @@ export function useTodos(listName = "default") {
     addTodo,
     toggleTodo,
     deleteTodo,
+    clearCompleted,
   };
 }
