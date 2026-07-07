@@ -107,21 +107,32 @@ export default function TodoPanel() {
   const [selectedMemberId, setSelectedMemberId] = useState<number | "">("");
   const [showAddMember, setShowAddMember] = useState(false);
   const [newMemberName, setNewMemberName] = useState("");
+  const [saveError, setSaveError] = useState("");
 
   async function handleAddTodo(e: FormEvent) {
     e.preventDefault();
     if (!newTitle.trim()) return;
-    await addTodo(newTitle.trim(), undefined, selectedMemberId ? Number(selectedMemberId) : undefined);
-    setNewTitle("");
+    try {
+      await addTodo(newTitle.trim(), undefined, selectedMemberId ? Number(selectedMemberId) : undefined);
+      setNewTitle("");
+      setSaveError("");
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Failed to save chore");
+    }
   }
 
   async function handleAddMember(e: FormEvent) {
     e.preventDefault();
     if (!newMemberName.trim()) return;
-    const color = MEMBER_COLORS[members.length % MEMBER_COLORS.length];
-    await addMember(newMemberName.trim(), color);
-    setNewMemberName("");
-    setShowAddMember(false);
+    try {
+      const color = MEMBER_COLORS[members.length % MEMBER_COLORS.length];
+      await addMember(newMemberName.trim(), color);
+      setNewMemberName("");
+      setShowAddMember(false);
+      setSaveError("");
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Failed to save member");
+    }
   }
 
   // Group todos by member
@@ -199,6 +210,12 @@ export default function TodoPanel() {
             </div>
           )}
         </div>
+      )}
+
+      {saveError && (
+        <p className="text-xs text-red-500 font-medium">
+          {saveError} — check `docker compose logs` and that ./data is writable.
+        </p>
       )}
 
       {/* Add chore form */}

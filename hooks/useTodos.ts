@@ -13,11 +13,12 @@ export function useTodos(listName = "default") {
   );
 
   async function addTodo(title: string, dueDate?: string, memberId?: number) {
-    await fetch("/api/todos", {
+    const res = await fetch("/api/todos", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title, list: listName, dueDate, memberId }),
     });
+    if (!res.ok) throw new Error(`Failed to save chore (HTTP ${res.status})`);
     await mutate();
   }
 

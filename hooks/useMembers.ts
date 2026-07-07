@@ -11,11 +11,12 @@ export function useMembers() {
   });
 
   async function addMember(name: string, color: string) {
-    await fetch("/api/members", {
+    const res = await fetch("/api/members", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, color }),
     });
+    if (!res.ok) throw new Error(`Failed to save member (HTTP ${res.status})`);
     await mutate();
   }
 
