@@ -1,15 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   format,
   addMonths,
   subMonths,
-  parseISO,
-  isSameDay,
+  startOfMonth,
+  endOfMonth,
   isSameMonth,
 } from "date-fns";
 import { useCalendar } from "@/hooks/useCalendar";
+import { eventCoversDay } from "@/lib/events";
 import { tint } from "@/lib/colors";
 import type { CalendarEvent } from "@/lib/integrations/types";
 
@@ -33,7 +34,7 @@ function eventsForDay(
   day: number
 ): CalendarEvent[] {
   const target = new Date(year, month, day);
-  return events.filter((e) => isSameDay(parseISO(e.start), target));
+  return events.filter((e) => eventCoversDay(e, target));
 }
 
 function EventChip({ event }: { event: CalendarEvent }) {
@@ -114,8 +115,17 @@ function DayCell({ day, isToday, isWeekend, events }: DayCellProps) {
 }
 
 export default function MonthCalendar() {
-  const { events } = useCalendar();
   const [viewDate, setViewDate] = useState(new Date());
+
+  // Fetch exactly the visible month (past days included)
+  const range = useMemo(
+    () => ({
+      start: startOfMonth(viewDate).toISOString(),
+      end: endOfMonth(viewDate).toISOString(),
+    }),
+    [viewDate]
+  );
+  const { events } = useCalendar(range);
 
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();

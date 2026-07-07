@@ -2,7 +2,8 @@ import { CalendarEvent } from "./types";
 
 // Lightweight CalDAV fetcher using tsdav
 export async function fetchICloudEvents(
-  daysAhead = 14
+  timeMin: Date,
+  timeMax: Date
 ): Promise<CalendarEvent[]> {
   const email = process.env.ICLOUD_EMAIL;
   const appPassword = process.env.ICLOUD_APP_PASSWORD;
@@ -22,17 +23,13 @@ export async function fetchICloudEvents(
 
     await client.login();
 
-    const now = new Date();
-    const end = new Date();
-    end.setDate(end.getDate() + daysAhead);
-
     const calendars = await client.fetchCalendars();
     const events: CalendarEvent[] = [];
 
     for (const cal of calendars) {
       const objects = await client.fetchCalendarObjects({
         calendar: cal,
-        timeRange: { start: now.toISOString(), end: end.toISOString() },
+        timeRange: { start: timeMin.toISOString(), end: timeMax.toISOString() },
       });
 
       for (const obj of objects) {

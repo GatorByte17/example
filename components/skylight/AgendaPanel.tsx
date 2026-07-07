@@ -1,7 +1,8 @@
 "use client";
 
-import { format, parseISO, startOfDay, addDays, isSameDay } from "date-fns";
+import { format, parseISO, startOfDay, addDays } from "date-fns";
 import { useCalendar } from "@/hooks/useCalendar";
+import { eventCoversDay } from "@/lib/events";
 import { SkeletonLoader } from "@/components/ui/SkeletonLoader";
 import type { CalendarEvent } from "@/lib/integrations/types";
 
@@ -62,11 +63,11 @@ export default function AgendaPanel() {
   const tomorrow = addDays(today, 1);
 
   const todayEvents = events
-    .filter((e) => isSameDay(parseISO(e.start), today))
+    .filter((e) => eventCoversDay(e, today))
     .sort((a, b) => a.start.localeCompare(b.start));
 
   const tomorrowEvents = events
-    .filter((e) => isSameDay(parseISO(e.start), tomorrow))
+    .filter((e) => eventCoversDay(e, tomorrow))
     .sort((a, b) => a.start.localeCompare(b.start));
 
   return (

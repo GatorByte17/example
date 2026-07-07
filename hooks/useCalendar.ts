@@ -11,15 +11,23 @@ interface CalendarResponse {
   errors: string[];
 }
 
-export function useCalendar() {
-  const { data, error, isLoading } = useSWR<CalendarResponse>(
-    "/api/calendar",
-    fetcher,
-    {
-      refreshInterval: 5 * 60 * 1000,
-      revalidateOnFocus: false,
-    }
-  );
+export interface CalendarRange {
+  start: string; // ISO
+  end: string;   // ISO
+}
+
+// Without a range: start of today → +45 days (agenda, countdown).
+// With a range (month view): that exact window, past days included.
+export function useCalendar(range?: CalendarRange) {
+  const key = range
+    ? `/api/calendar?start=${encodeURIComponent(range.start)}&end=${encodeURIComponent(range.end)}`
+    : "/api/calendar";
+
+  const { data, error, isLoading } = useSWR<CalendarResponse>(key, fetcher, {
+    refreshInterval: 5 * 60 * 1000,
+    revalidateOnFocus: false,
+    keepPreviousData: true,
+  });
 
   return {
     events: data?.events ?? [],
