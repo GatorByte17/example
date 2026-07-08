@@ -22,8 +22,12 @@ try {
 }
 
 export const metadata: Metadata = {
-  title: "Skylight Dashboard",
-  description: "Your personal family calendar dashboard",
+  title: "Corkboard",
+  description: "Your family's calendar, chores, and lists — all on one board",
+  appleWebApp: {
+    title: "Corkboard",
+    statusBarStyle: "default",
+  },
 };
 
 export const viewport: Viewport = {

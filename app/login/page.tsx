@@ -34,11 +34,11 @@ function LoginForm() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">
       <div className="w-full max-w-sm p-8 rounded-2xl sky-card animate-fade-in">
-        <h1 className="text-2xl font-semibold text-[var(--foreground)] mb-2 text-center">
-          Dashboard
+        <h1 className="text-2xl font-bold text-[var(--foreground)] mb-2 text-center">
+          📌 Corkboard
         </h1>
         <p className="text-sm text-[var(--muted)] text-center mb-8">
-          Sign in to continue
+          Sign in to the family board
         </p>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
