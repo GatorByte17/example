@@ -12,6 +12,8 @@ import {
   endOfMonth,
   startOfWeek,
   endOfWeek,
+  startOfDay,
+  endOfDay,
   isSameMonth,
   isSameWeek,
   isSameDay,
@@ -227,17 +229,21 @@ function WeekTimeline({ days, events }: { days: Date[]; events: CalendarEvent[] 
   const today = new Date();
   const hours = Array.from({ length: 24 }, (_, h) => h);
 
-  // Open on the morning, not midnight
+  // Open positioned at the current time (with an hour of lead-in above)
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: 7 * HOUR_HEIGHT });
+    const now = new Date();
+    const target = Math.max(0, (now.getHours() - 1) * HOUR_HEIGHT);
+    scrollRef.current?.scrollTo({ top: target });
   }, []);
 
-  const cols = "grid grid-cols-[44px_repeat(7,minmax(0,1fr))] gap-x-1";
+  const colStyle = {
+    gridTemplateColumns: `44px repeat(${days.length}, minmax(0, 1fr))`,
+  };
 
   return (
     <div className="flex-1 min-h-0 hidden md:flex flex-col">
       {/* Day headers + all-day chips */}
-      <div className={`${cols} flex-none pb-1`}>
+      <div className="grid gap-x-1 flex-none pb-1" style={colStyle}>
         <div />
         {days.map((day) => {
           const isToday = isSameDay(day, today);
@@ -282,7 +288,7 @@ function WeekTimeline({ days, events }: { days: Date[]; events: CalendarEvent[] 
 
       {/* Scrollable hour grid */}
       <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto scrollbar-none rounded-xl">
-        <div className={cols} style={{ height: 24 * HOUR_HEIGHT }}>
+        <div className="grid gap-x-1" style={{ ...colStyle, height: 24 * HOUR_HEIGHT }}>
           {/* Time gutter */}
           <div className="relative">
             {hours.map((h) => (
@@ -329,11 +335,11 @@ function WeekTimeline({ days, events }: { days: Date[]; events: CalendarEvent[] 
                     }}
                     title={p.event.title}
                   >
-                    <div className="text-[10px] font-bold truncate leading-tight">
+                    <div className="text-[11px] font-bold truncate leading-tight">
                       {p.event.title} <AssignmentDots event={p.event} size="xs" />
                     </div>
-                    {p.height >= 34 && (
-                      <div className="text-[9px] font-medium opacity-75 truncate">
+                    {p.height >= 30 && (
+                      <div className="text-[10px] font-medium opacity-75 truncate">
                         {format(parseISO(p.event.start), "h:mm a")}
                       </div>
                     )}
@@ -348,10 +354,20 @@ function WeekTimeline({ days, events }: { days: Date[]; events: CalendarEvent[] 
   );
 }
 
-function WeekGrid({ viewDate, events }: { viewDate: Date; events: CalendarEvent[] }) {
-  const weekStart = startOfWeek(viewDate);
+function WeekGrid({
+  viewDate,
+  events,
+  view,
+}: {
+  viewDate: Date;
+  events: CalendarEvent[];
+  view: "week" | "3day";
+}) {
   const today = new Date();
-  const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  // Week starts on Sunday; 3-day starts on the viewed day
+  const start = view === "week" ? startOfWeek(viewDate) : startOfDay(viewDate);
+  const dayCount = view === "week" ? 7 : 3;
+  const days = Array.from({ length: dayCount }, (_, i) => addDays(start, i));
 
   return (
     <>
@@ -416,6 +432,12 @@ export default function MonthCalendar() {
         end: endOfWeek(viewDate).toISOString(),
       };
     }
+    if (calendarView === "3day") {
+      return {
+        start: startOfDay(viewDate).toISOString(),
+        end: endOfDay(addDays(viewDate, 2)).toISOString(),
+      };
+    }
     return {
       start: startOfMonth(viewDate).toISOString(),
       end: endOfMonth(viewDate).toISOString(),
@@ -428,20 +450,29 @@ export default function MonthCalendar() {
   const onCurrent =
     calendarView === "week"
       ? isSameWeek(viewDate, today)
+      : calendarView === "3day"
+      ? isSameDay(viewDate, today)
       : isSameMonth(viewDate, today);
 
   const title =
     calendarView === "week"
       ? `${format(startOfWeek(viewDate), "MMM d")} – ${format(endOfWeek(viewDate), "MMM d")}`
+      : calendarView === "3day"
+      ? `${format(viewDate, "MMM d")} – ${format(addDays(viewDate, 2), "MMM d")}`
       : format(viewDate, "MMMM yyyy");
 
   function step(dir: 1 | -1) {
     setViewDate((d) =>
       calendarView === "week"
         ? dir === 1 ? addWeeks(d, 1) : subWeeks(d, 1)
+        : calendarView === "3day"
+        ? addDays(d, dir * 3)
         : dir === 1 ? addMonths(d, 1) : subMonths(d, 1)
     );
   }
+
+  const stepLabel =
+    calendarView === "week" ? "week" : calendarView === "3day" ? "3 days" : "month";
 
   return (
     <div className="sky-card p-3 sm:p-4 flex flex-col gap-3 flex-1 min-h-0">
@@ -450,7 +481,7 @@ export default function MonthCalendar() {
         <button
           onClick={() => step(-1)}
           className="w-9 h-9 flex items-center justify-center rounded-full bg-[var(--surface-2)] text-[var(--foreground)] hover:bg-[var(--accent)] hover:text-white transition text-xl font-light flex-shrink-0"
-          aria-label={calendarView === "week" ? "Previous week" : "Previous month"}
+          aria-label={`Previous ${stepLabel}`}
         >
           ‹
         </button>
@@ -468,18 +499,22 @@ export default function MonthCalendar() {
             </button>
           )}
           <div className="flex bg-[var(--surface-2)] rounded-full p-0.5">
-            {(["month", "week"] as CalendarView[]).map((v) => (
+            {([
+              ["month", "Month"],
+              ["week", "Week"],
+              ["3day", "3 Day"],
+            ] as [CalendarView, string][]).map(([v, label]) => (
               <button
                 key={v}
                 onClick={() => setCalendarView(v)}
                 className={[
-                  "px-2.5 py-1 rounded-full text-[11px] font-semibold capitalize transition",
+                  "px-2.5 py-1 rounded-full text-[11px] font-semibold transition whitespace-nowrap",
                   calendarView === v
                     ? "bg-[var(--surface)] text-[var(--foreground)] shadow-sm"
                     : "text-[var(--muted)]",
                 ].join(" ")}
               >
-                {v}
+                {label}
               </button>
             ))}
           </div>
@@ -488,16 +523,22 @@ export default function MonthCalendar() {
         <button
           onClick={() => step(1)}
           className="w-9 h-9 flex items-center justify-center rounded-full bg-[var(--surface-2)] text-[var(--foreground)] hover:bg-[var(--accent)] hover:text-white transition text-xl font-light flex-shrink-0"
-          aria-label={calendarView === "week" ? "Next week" : "Next month"}
+          aria-label={`Next ${stepLabel}`}
         >
           ›
         </button>
       </div>
 
-      {calendarView === "week" ? (
-        <WeekGrid viewDate={viewDate} events={events} />
-      ) : (
+      {calendarView === "month" ? (
         <MonthGrid viewDate={viewDate} events={events} />
+      ) : (
+        /* key remounts the timeline on view change so it re-scrolls to now */
+        <WeekGrid
+          key={calendarView}
+          viewDate={viewDate}
+          events={events}
+          view={calendarView}
+        />
       )}
     </div>
   );

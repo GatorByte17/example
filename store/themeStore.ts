@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export type CalendarView = "month" | "week";
+export type CalendarView = "month" | "week" | "3day";
 export type DashboardView = "home" | "calendar" | "agenda" | "chores" | "lists";
 
 export interface PanelVisibility {

@@ -2,7 +2,7 @@ import { parseISO, startOfDay, addDays } from "date-fns";
 import { eventCoversDay } from "./events";
 import type { CalendarEvent } from "./integrations/types";
 
-export const HOUR_HEIGHT = 48; // px per hour in the week timeline
+export const HOUR_HEIGHT = 64; // px per hour in the timeline (taller = more legible)
 const MIN_DISPLAY_MINUTES = 30; // short events still get a readable block
 
 export interface PositionedEvent {
