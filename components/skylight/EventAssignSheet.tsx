@@ -4,16 +4,19 @@ import { format, parseISO } from "date-fns";
 import { useUiStore } from "@/store/uiStore";
 import { useMembers } from "@/hooks/useMembers";
 import { useAssignments } from "@/hooks/useAssignments";
+import { useCountdown } from "@/hooks/useCountdown";
 
 export default function EventAssignSheet() {
   const { assignEvent, setAssignEvent } = useUiStore();
   const { members } = useMembers();
   const { assignments, assign } = useAssignments();
+  const { pinned, pin, unpin } = useCountdown();
 
   if (!assignEvent) return null;
 
   const key = assignEvent.seriesKey ?? assignEvent.id;
   const assigned = assignments[key] ?? [];
+  const isPinned = pinned?.key === key;
 
   async function toggle(memberId: number) {
     const next = assigned.includes(memberId)
@@ -108,12 +111,26 @@ export default function EventAssignSheet() {
           this dashboard — Google is never modified.
         </p>
 
-        <button
-          onClick={() => setAssignEvent(null)}
-          className="self-end px-4 py-2 rounded-xl bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white text-sm font-bold transition"
-        >
-          Done
-        </button>
+        <div className="flex items-center justify-between gap-2">
+          <button
+            onClick={() => (isPinned ? unpin() : pin(assignEvent)).catch(() => {})}
+            className={[
+              "px-3 py-2 rounded-xl text-xs font-semibold transition border",
+              isPinned
+                ? "bg-[var(--surface-2)] text-[var(--foreground)] border-[var(--border)]"
+                : "text-[var(--teal)] border-[var(--teal)]/40 hover:bg-[var(--teal)] hover:text-white",
+            ].join(" ")}
+          >
+            {isPinned ? "📌 Unpin from countdown" : "📌 Pin to countdown"}
+          </button>
+
+          <button
+            onClick={() => setAssignEvent(null)}
+            className="px-4 py-2 rounded-xl bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white text-sm font-bold transition"
+          >
+            Done
+          </button>
+        </div>
       </div>
     </div>
   );
