@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import {
   format,
   addMonths,
@@ -21,6 +21,7 @@ import { useCalendar } from "@/hooks/useCalendar";
 import { useThemeStore, CalendarView } from "@/store/themeStore";
 import { useUiStore } from "@/store/uiStore";
 import { eventCoversDay } from "@/lib/events";
+import { HOUR_HEIGHT, layoutDayEvents, allDayEventsFor } from "@/lib/week-layout";
 import { tint, readableText } from "@/lib/colors";
 import AssignmentDots from "./AssignmentDots";
 import type { CalendarEvent } from "@/lib/integrations/types";
@@ -202,55 +203,203 @@ function WeekEventChip({ event }: { event: CalendarEvent }) {
   );
 }
 
+// Current-time line, isolated so only it re-renders each minute
+function NowLine() {
+  const [now, setNow] = useState(new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+  const top = ((now.getHours() * 60 + now.getMinutes()) / 60) * HOUR_HEIGHT;
+
+  return (
+    <div className="absolute left-0 right-0 z-10 pointer-events-none" style={{ top }}>
+      <div className="h-[2px] bg-[var(--accent)]" />
+      <div className="w-2 h-2 rounded-full bg-[var(--accent)] -mt-[5px] -ml-0.5" />
+    </div>
+  );
+}
+
+// Hour-by-hour timeline: iPad landscape / desktop widths
+function WeekTimeline({ days, events }: { days: Date[]; events: CalendarEvent[] }) {
+  const { setAssignEvent } = useUiStore();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const today = new Date();
+  const hours = Array.from({ length: 24 }, (_, h) => h);
+
+  // Open on the morning, not midnight
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: 7 * HOUR_HEIGHT });
+  }, []);
+
+  const cols = "grid grid-cols-[44px_repeat(7,minmax(0,1fr))] gap-x-1";
+
+  return (
+    <div className="flex-1 min-h-0 hidden md:flex flex-col">
+      {/* Day headers + all-day chips */}
+      <div className={`${cols} flex-none pb-1`}>
+        <div />
+        {days.map((day) => {
+          const isToday = isSameDay(day, today);
+          const allDay = allDayEventsFor(events, day);
+          return (
+            <div key={day.toISOString()} className="flex flex-col items-stretch gap-1 min-w-0">
+              <div className="flex items-center justify-center gap-1.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--teal)]">
+                  {format(day, "EEE")}
+                </span>
+                <span
+                  className={[
+                    "w-7 h-7 flex items-center justify-center rounded-full text-sm font-semibold leading-none",
+                    isToday
+                      ? "bg-[var(--accent)] text-white font-bold shadow-sm"
+                      : "text-[var(--foreground)]",
+                  ].join(" ")}
+                >
+                  {format(day, "d")}
+                </span>
+              </div>
+              {allDay.slice(0, 2).map((e) => (
+                <button
+                  key={e.id}
+                  onClick={() => setAssignEvent(e)}
+                  className="px-1.5 py-0.5 rounded-md text-[9px] font-bold truncate text-left"
+                  style={chipColors(e.color)}
+                  title={e.title}
+                >
+                  {e.title}
+                </button>
+              ))}
+              {allDay.length > 2 && (
+                <span className="text-[9px] font-semibold text-[var(--muted)] px-1.5">
+                  +{allDay.length - 2} more
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Scrollable hour grid */}
+      <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto scrollbar-none rounded-xl">
+        <div className={cols} style={{ height: 24 * HOUR_HEIGHT }}>
+          {/* Time gutter */}
+          <div className="relative">
+            {hours.map((h) => (
+              <span
+                key={h}
+                className="absolute right-1.5 text-[9px] font-semibold text-[var(--muted)] -translate-y-1/2"
+                style={{ top: h * HOUR_HEIGHT }}
+              >
+                {h === 0 ? "" : format(new Date(2000, 0, 1, h), "h a")}
+              </span>
+            ))}
+          </div>
+
+          {days.map((day) => {
+            const isToday = isSameDay(day, today);
+            const positioned = layoutDayEvents(events, day);
+            return (
+              <div
+                key={day.toISOString()}
+                className={[
+                  "relative min-w-0",
+                  isToday ? "bg-[var(--surface-2)]/50 rounded-lg" : "",
+                ].join(" ")}
+              >
+                {hours.map((h) => (
+                  <div
+                    key={h}
+                    className="absolute left-0 right-0 border-t border-[var(--border)]"
+                    style={{ top: h * HOUR_HEIGHT }}
+                  />
+                ))}
+                {isToday && <NowLine />}
+                {positioned.map((p) => (
+                  <button
+                    key={p.event.id}
+                    onClick={() => setAssignEvent(p.event)}
+                    className="absolute rounded-lg px-1.5 py-1 text-left overflow-hidden border border-white/40"
+                    style={{
+                      top: p.top,
+                      height: Math.max(p.height - 2, 22),
+                      left: `${p.leftPct}%`,
+                      width: `calc(${p.widthPct}% - 2px)`,
+                      ...chipColors(p.event.color),
+                    }}
+                    title={p.event.title}
+                  >
+                    <div className="text-[10px] font-bold truncate leading-tight">
+                      {p.event.title} <AssignmentDots event={p.event} size="xs" />
+                    </div>
+                    {p.height >= 34 && (
+                      <div className="text-[9px] font-medium opacity-75 truncate">
+                        {format(parseISO(p.event.start), "h:mm a")}
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function WeekGrid({ viewDate, events }: { viewDate: Date; events: CalendarEvent[] }) {
   const weekStart = startOfWeek(viewDate);
   const today = new Date();
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
   return (
-    <div className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-7 gap-1.5 overflow-y-auto scrollbar-none">
-      {days.map((day) => {
-        const dayEvents = sortedEventsForDay(events, day);
-        const isToday = isSameDay(day, today);
+    <>
+      {/* Phones: simple day list (an hour grid doesn't fit) */}
+      <div className="flex-1 min-h-0 flex flex-col gap-1.5 overflow-y-auto scrollbar-none md:hidden">
+        {days.map((day) => {
+          const dayEvents = sortedEventsForDay(events, day);
+          const isToday = isSameDay(day, today);
 
-        return (
-          <div
-            key={day.toISOString()}
-            className={[
-              "flex md:flex-col gap-2 md:gap-1.5 rounded-xl p-2 min-w-0 md:min-h-0",
-              isToday ? "bg-[var(--surface-2)]" : "",
-            ].join(" ")}
-          >
-            {/* Day header — left column on phones, top on wider screens */}
-            <div className="flex md:flex-col items-center gap-1 flex-none w-12 md:w-auto">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--teal)]">
-                {format(day, "EEE")}
-              </span>
-              <span
-                className={[
-                  "w-7 h-7 flex items-center justify-center rounded-full text-sm font-semibold leading-none",
-                  isToday
-                    ? "bg-[var(--accent)] text-white font-bold shadow-sm"
-                    : "text-[var(--foreground)]",
-                ].join(" ")}
-              >
-                {format(day, "d")}
-              </span>
-            </div>
-
-            <div className="flex flex-col gap-1 flex-1 min-w-0 md:overflow-y-auto scrollbar-none">
-              {dayEvents.length === 0 ? (
-                <span className="text-[11px] text-[var(--muted)]/60 italic md:text-center py-1">
-                  —
+          return (
+            <div
+              key={day.toISOString()}
+              className={[
+                "flex gap-2 rounded-xl p-2 min-w-0",
+                isToday ? "bg-[var(--surface-2)]" : "",
+              ].join(" ")}
+            >
+              <div className="flex items-center gap-1 flex-none w-12">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--teal)]">
+                  {format(day, "EEE")}
                 </span>
-              ) : (
-                dayEvents.map((e) => <WeekEventChip key={e.id} event={e} />)
-              )}
+                <span
+                  className={[
+                    "w-7 h-7 flex items-center justify-center rounded-full text-sm font-semibold leading-none",
+                    isToday
+                      ? "bg-[var(--accent)] text-white font-bold shadow-sm"
+                      : "text-[var(--foreground)]",
+                  ].join(" ")}
+                >
+                  {format(day, "d")}
+                </span>
+              </div>
+
+              <div className="flex flex-col gap-1 flex-1 min-w-0">
+                {dayEvents.length === 0 ? (
+                  <span className="text-[11px] text-[var(--muted)]/60 italic py-1">—</span>
+                ) : (
+                  dayEvents.map((e) => <WeekEventChip key={e.id} event={e} />)
+                )}
+              </div>
             </div>
-          </div>
-        );
-      })}
-    </div>
+          );
+        })}
+      </div>
+
+      {/* iPad/desktop: hour-by-hour timeline */}
+      <WeekTimeline days={days} events={events} />
+    </>
   );
 }
 
