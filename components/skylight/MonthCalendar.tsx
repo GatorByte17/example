@@ -21,17 +21,19 @@ import { useCalendar } from "@/hooks/useCalendar";
 import { useThemeStore, CalendarView } from "@/store/themeStore";
 import { useUiStore } from "@/store/uiStore";
 import { eventCoversDay } from "@/lib/events";
-import { tint } from "@/lib/colors";
+import { tint, readableText } from "@/lib/colors";
 import AssignmentDots from "./AssignmentDots";
 import type { CalendarEvent } from "@/lib/integrations/types";
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 function chipColors(color?: string) {
-  const c = color ?? "var(--accent)";
+  // The raw calendar color stays as the tint; the text is a darkened
+  // version of the same hue so light colors (yellow, sky blue) stay legible
+  const hex = !color || color.startsWith("var(") ? "#ff6b57" : color;
   return {
-    backgroundColor: c.startsWith("var(") ? "rgba(255, 107, 87, 0.15)" : tint(c),
-    color: c,
+    backgroundColor: tint(hex, 0.18),
+    color: readableText(hex),
   };
 }
 
