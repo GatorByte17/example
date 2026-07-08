@@ -4,11 +4,21 @@ import { useState, FormEvent } from "react";
 import { useTodos } from "@/hooks/useTodos";
 import { useMembers } from "@/hooks/useMembers";
 import { useLists } from "@/hooks/useLists";
+import { useGoogleTaskLists, useGoogleTasks } from "@/hooks/useGoogleTasks";
 import { useThemeStore } from "@/store/themeStore";
 import { SkeletonLoader } from "@/components/ui/SkeletonLoader";
 import { MEMBER_COLORS } from "@/lib/colors";
 import type { Todo } from "@/lib/db/queries/todos";
 import type { Member } from "@/lib/db/queries/members";
+
+interface ItemLike {
+  id: number | string;
+  title: string;
+  done: boolean;
+}
+
+const inputClass =
+  "bg-[var(--surface-2)] border border-[var(--border)] rounded-xl text-[var(--foreground)] placeholder-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/40 transition";
 
 function TodoItem({
   todo,
@@ -16,9 +26,9 @@ function TodoItem({
   onDelete,
   memberColor,
 }: {
-  todo: Todo;
-  onToggle: (id: number) => void;
-  onDelete: (id: number) => void;
+  todo: ItemLike;
+  onToggle: (id: number | string) => void;
+  onDelete: (id: number | string) => void;
   memberColor?: string;
 }) {
   const color = memberColor ?? "var(--teal)";
@@ -49,7 +59,7 @@ function TodoItem({
       <button
         onClick={() => onDelete(todo.id)}
         className="opacity-0 group-hover:opacity-100 text-[var(--muted)] hover:text-[var(--accent)] transition text-xs px-1"
-        aria-label="Delete chore"
+        aria-label="Delete item"
       >
         ✕
       </button>
@@ -65,8 +75,8 @@ function MemberSection({
 }: {
   member: Member | null;
   todos: Todo[];
-  onToggle: (id: number) => void;
-  onDelete: (id: number) => void;
+  onToggle: (id: number | string) => void;
+  onDelete: (id: number | string) => void;
 }) {
   if (todos.length === 0) return null;
 
@@ -104,14 +114,32 @@ function MemberSection({
 
 export default function TodoPanel() {
   const { lists, addList, deleteList } = useLists();
+  const { googleLists } = useGoogleTaskLists();
   const { activeList, setActiveList } = useThemeStore();
-  // Fall back to Chores if the persisted active list was deleted
-  const currentList =
-    lists.find((l) => l.key === activeList) ?? lists.find((l) => l.key === "chores");
-  const listKey = currentList?.key ?? "chores";
-  const isChores = listKey === "chores";
+
+  const isGoogle = activeList.startsWith("g:");
+  const googleListId = isGoogle ? activeList.slice(2) : null;
+  const currentGoogle = googleLists.find((l) => l.id === googleListId);
+
+  // Fall back to Chores if a persisted local list was deleted
+  const currentLocal = !isGoogle
+    ? lists.find((l) => l.key === activeList) ?? lists.find((l) => l.key === "chores")
+    : undefined;
+  const listKey = currentLocal?.key ?? "chores";
+  const isChores = !isGoogle && listKey === "chores";
+  const panelTitle = isGoogle
+    ? currentGoogle?.title ?? "Google Tasks"
+    : currentLocal?.name ?? "Lists";
 
   const { todos, isLoading, addTodo, toggleTodo, deleteTodo } = useTodos(listKey);
+  const {
+    tasks: gTasks,
+    isLoading: gLoading,
+    addTask,
+    toggleTask,
+    deleteTask,
+  } = useGoogleTasks(googleListId);
+
   const { members, addMember } = useMembers();
   const [newTitle, setNewTitle] = useState("");
   const [selectedMemberId, setSelectedMemberId] = useState<number | "">("");
@@ -121,29 +149,26 @@ export default function TodoPanel() {
   const [newListName, setNewListName] = useState("");
   const [saveError, setSaveError] = useState("");
 
-  async function handleAddList(e: FormEvent) {
-    e.preventDefault();
-    if (!newListName.trim()) return;
+  const items: ItemLike[] = isGoogle ? gTasks : todos;
+  const loading = isGoogle ? gLoading : isLoading;
+
+  async function handleToggleItem(id: number | string) {
     try {
-      const list = await addList(newListName.trim());
-      setActiveList(list.key);
-      setNewListName("");
-      setShowAddList(false);
+      if (isGoogle) await toggleTask(String(id));
+      else await toggleTodo(Number(id));
       setSaveError("");
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : "Failed to create list");
+      setSaveError(err instanceof Error ? err.message : "Failed to update item");
     }
   }
 
-  async function handleDeleteList() {
-    if (!currentList || isChores) return;
-    if (!window.confirm(`Delete the "${currentList.name}" list and its items?`)) return;
+  async function handleDeleteItem(id: number | string) {
     try {
-      await deleteList(currentList.id);
-      setActiveList("chores");
+      if (isGoogle) await deleteTask(String(id));
+      else await deleteTodo(Number(id));
       setSaveError("");
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : "Failed to delete list");
+      setSaveError(err instanceof Error ? err.message : "Failed to delete item");
     }
   }
 
@@ -151,15 +176,19 @@ export default function TodoPanel() {
     e.preventDefault();
     if (!newTitle.trim()) return;
     try {
-      await addTodo(
-        newTitle.trim(),
-        undefined,
-        isChores && selectedMemberId ? Number(selectedMemberId) : undefined
-      );
+      if (isGoogle) {
+        await addTask(newTitle.trim());
+      } else {
+        await addTodo(
+          newTitle.trim(),
+          undefined,
+          isChores && selectedMemberId ? Number(selectedMemberId) : undefined
+        );
+      }
       setNewTitle("");
       setSaveError("");
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : "Failed to save chore");
+      setSaveError(err instanceof Error ? err.message : "Failed to save item");
     }
   }
 
@@ -177,7 +206,33 @@ export default function TodoPanel() {
     }
   }
 
-  // Group todos by member
+  async function handleAddList(e: FormEvent) {
+    e.preventDefault();
+    if (!newListName.trim()) return;
+    try {
+      const list = await addList(newListName.trim());
+      setActiveList(list.key);
+      setNewListName("");
+      setShowAddList(false);
+      setSaveError("");
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Failed to create list");
+    }
+  }
+
+  async function handleDeleteList() {
+    if (!currentLocal || isChores) return;
+    if (!window.confirm(`Delete the "${currentLocal.name}" list and its items?`)) return;
+    try {
+      await deleteList(currentLocal.id);
+      setActiveList("chores");
+      setSaveError("");
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Failed to delete list");
+    }
+  }
+
+  // Group chores by member
   const byMember = new Map<number | null, Todo[]>();
   byMember.set(null, []);
   for (const m of members) byMember.set(m.id, []);
@@ -187,17 +242,21 @@ export default function TodoPanel() {
     byMember.get(mid)!.push(t);
   }
 
-  const inputClass =
-    "bg-[var(--surface-2)] border border-[var(--border)] rounded-xl text-[var(--foreground)] placeholder-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/40 transition";
-
   return (
     <div className="sky-card p-4 flex flex-col gap-3 overflow-y-auto scrollbar-none min-h-0 h-full">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-base font-bold text-[var(--foreground)] truncate">
-          {currentList?.name ?? "Lists"}
-        </h2>
+        <div className="flex items-center gap-2 min-w-0">
+          <h2 className="text-base font-bold text-[var(--foreground)] truncate">
+            {panelTitle}
+          </h2>
+          {isGoogle && (
+            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#4285f4]/12 text-[#1a63d8] flex-shrink-0">
+              Google
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          {!isChores && currentList && (
+          {!isGoogle && !isChores && currentLocal && (
             <button
               onClick={handleDeleteList}
               className="text-[11px] font-semibold text-[var(--muted)] hover:text-red-500 transition"
@@ -226,12 +285,33 @@ export default function TodoPanel() {
             onClick={() => setActiveList(l.key)}
             className={[
               "px-2.5 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap transition flex-shrink-0",
-              l.key === listKey
+              !isGoogle && l.key === listKey
                 ? "bg-[var(--accent)] text-white shadow-sm"
                 : "bg-[var(--surface-2)] text-[var(--muted)] hover:text-[var(--foreground)]",
             ].join(" ")}
           >
             {l.name}
+          </button>
+        ))}
+        {googleLists.map((l) => (
+          <button
+            key={l.id}
+            onClick={() => setActiveList(`g:${l.id}`)}
+            className={[
+              "px-2.5 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap transition flex-shrink-0 inline-flex items-center gap-1.5",
+              isGoogle && googleListId === l.id
+                ? "bg-[var(--accent)] text-white shadow-sm"
+                : "bg-[var(--surface-2)] text-[var(--muted)] hover:text-[var(--foreground)]",
+            ].join(" ")}
+            title={`${l.title} (Google Tasks)`}
+          >
+            {l.title}
+            <span
+              className={[
+                "w-1.5 h-1.5 rounded-full flex-shrink-0",
+                isGoogle && googleListId === l.id ? "bg-white" : "bg-[#4285f4]",
+              ].join(" ")}
+            />
           </button>
         ))}
         <button
@@ -277,7 +357,7 @@ export default function TodoPanel() {
         </form>
       )}
 
-      {isLoading ? (
+      {loading ? (
         <SkeletonLoader count={3} />
       ) : (
         <div className="flex flex-col gap-3">
@@ -289,8 +369,8 @@ export default function TodoPanel() {
                   key={m.id}
                   member={m}
                   todos={byMember.get(m.id) ?? []}
-                  onToggle={toggleTodo}
-                  onDelete={deleteTodo}
+                  onToggle={handleToggleItem}
+                  onDelete={handleDeleteItem}
                 />
               ))}
 
@@ -299,21 +379,26 @@ export default function TodoPanel() {
                 <MemberSection
                   member={null}
                   todos={byMember.get(null) ?? []}
-                  onToggle={toggleTodo}
-                  onDelete={deleteTodo}
+                  onToggle={handleToggleItem}
+                  onDelete={handleDeleteItem}
                 />
               )}
             </>
           ) : (
-            /* Plain lists (shopping etc.) — flat items, no member grouping */
+            /* Plain and Google lists — flat items, no member grouping */
             <div>
-              {todos.map((t) => (
-                <TodoItem key={t.id} todo={t} onToggle={toggleTodo} onDelete={deleteTodo} />
+              {items.map((t) => (
+                <TodoItem
+                  key={t.id}
+                  todo={t}
+                  onToggle={handleToggleItem}
+                  onDelete={handleDeleteItem}
+                />
               ))}
             </div>
           )}
 
-          {todos.length === 0 && (
+          {items.length === 0 && (
             <div className="flex flex-col items-center gap-1 py-4 text-center">
               <span className="text-3xl">{isChores ? "🎉" : "🛒"}</span>
               <p className="text-sm text-[var(--muted)] font-medium">
@@ -330,7 +415,7 @@ export default function TodoPanel() {
         </p>
       )}
 
-      {/* Add chore form */}
+      {/* Add item form */}
       <form
         onSubmit={handleAddTodo}
         className="flex flex-col gap-1.5 mt-auto pt-3 border-t border-[var(--border)]"

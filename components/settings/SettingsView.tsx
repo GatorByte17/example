@@ -386,6 +386,11 @@ function CalendarsSection() {
         )}
       </div>
 
+      <GoogleTasksRow
+        googleConnected={Boolean(connected?.google)}
+        StatusDot={StatusDot}
+      />
+
       <div className="flex items-center justify-between py-1">
         <div className="flex items-center gap-2">
           <StatusDot on={Boolean(connected?.icloud)} />
@@ -396,6 +401,37 @@ function CalendarsSection() {
         </span>
       </div>
     </SectionCard>
+  );
+}
+
+function GoogleTasksRow({
+  googleConnected,
+  StatusDot,
+}: {
+  googleConnected: boolean;
+  StatusDot: (props: { on: boolean }) => React.ReactNode;
+}) {
+  const { data } = useSWR<{ connected: boolean }>("/api/google-tasks", fetcher, {
+    revalidateOnFocus: false,
+  });
+  const tasksConnected = Boolean(data?.connected);
+
+  return (
+    <div className="flex items-center justify-between py-1">
+      <div className="flex items-center gap-2">
+        <StatusDot on={tasksConnected} />
+        <span className="text-sm font-medium text-[var(--foreground)]">Google Tasks</span>
+      </div>
+      {tasksConnected ? (
+        <span className="text-xs text-[var(--muted)]">Lists sync in the Lists panel</span>
+      ) : googleConnected ? (
+        <span className="text-xs text-[var(--muted)]">
+          Disconnect &amp; reconnect Google to grant Tasks access
+        </span>
+      ) : (
+        <span className="text-xs text-[var(--muted)]">Connect Google to enable</span>
+      )}
+    </div>
   );
 }
 

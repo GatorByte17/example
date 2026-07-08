@@ -2,22 +2,15 @@ import { google } from "googleapis";
 import type { calendar_v3 } from "googleapis";
 import { CalendarEvent } from "./types";
 import { getSetting, setSetting } from "@/lib/db/queries/settings";
+import { getOAuth2Client, getAuthorizedClient, GOOGLE_SCOPES } from "./google-auth";
 import { GOOGLE_EVENT_COLORS } from "@/lib/colors";
-
-function getOAuth2Client() {
-  return new google.auth.OAuth2(
-    process.env.GOOGLE_CLIENT_ID,
-    process.env.GOOGLE_CLIENT_SECRET,
-    `${process.env.NEXT_PUBLIC_APP_URL}/api/calendar/google/callback`
-  );
-}
 
 export function getGoogleAuthUrl(): string {
   const client = getOAuth2Client();
   return client.generateAuthUrl({
     access_type: "offline",
     prompt: "consent",
-    scope: ["https://www.googleapis.com/auth/calendar.readonly"],
+    scope: GOOGLE_SCOPES,
   });
 }
 
@@ -54,20 +47,8 @@ export async function fetchGoogleEvents(
   timeMin: Date,
   timeMax: Date
 ): Promise<CalendarEvent[]> {
-  const tokenStr = getSetting("google_calendar_tokens");
-  if (!tokenStr) return [];
-
-  const client = getOAuth2Client();
-  client.setCredentials(JSON.parse(tokenStr));
-
-  // Auto-save refreshed tokens
-  client.on("tokens", (tokens) => {
-    const existing = JSON.parse(getSetting("google_calendar_tokens") ?? "{}");
-    setSetting(
-      "google_calendar_tokens",
-      JSON.stringify({ ...existing, ...tokens })
-    );
-  });
+  const client = getAuthorizedClient();
+  if (!client) return [];
 
   const calendar = google.calendar({ version: "v3", auth: client });
 
