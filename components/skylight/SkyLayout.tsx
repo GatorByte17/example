@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useThemeStore } from "@/store/themeStore";
+import { useThemeStore, DashboardView } from "@/store/themeStore";
 import SkyHeader from "./SkyHeader";
 import AgendaPanel from "./AgendaPanel";
 import MonthCalendar from "./MonthCalendar";
@@ -18,8 +18,40 @@ const GRID_COLS: Record<string, string> = {
   none: "",
 };
 
+const VIEWS: { key: DashboardView; label: string }[] = [
+  { key: "home", label: "Home" },
+  { key: "calendar", label: "Calendar" },
+  { key: "agenda", label: "Agenda" },
+  { key: "chores", label: "Chores" },
+  { key: "lists", label: "Lists" },
+];
+
+function ViewNav() {
+  const { dashboardView, setDashboardView } = useThemeStore();
+  return (
+    <nav className="flex-none flex justify-center px-3 pb-2">
+      <div className="flex gap-0.5 bg-[var(--surface)] border border-[var(--border)] rounded-full p-1 shadow-sm overflow-x-auto scrollbar-none max-w-full">
+        {VIEWS.map((v) => (
+          <button
+            key={v.key}
+            onClick={() => setDashboardView(v.key)}
+            className={[
+              "px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition flex-shrink-0",
+              dashboardView === v.key
+                ? "bg-[var(--accent)] text-white shadow-sm"
+                : "text-[var(--muted)] hover:text-[var(--foreground)]",
+            ].join(" ")}
+          >
+            {v.label}
+          </button>
+        ))}
+      </div>
+    </nav>
+  );
+}
+
 export default function SkyLayout() {
-  const { accentColor, panels } = useThemeStore();
+  const { accentColor, panels, dashboardView } = useThemeStore();
 
   useEffect(() => {
     const root = document.documentElement;
@@ -38,29 +70,52 @@ export default function SkyLayout() {
     <div className="relative min-h-screen w-full md:h-screen md:overflow-hidden bg-[var(--background)]">
       <div className="min-h-screen md:min-h-0 md:h-full flex flex-col">
         <SkyHeader />
+        <ViewNav />
 
-        {/* Naturally-sized scrolling column on phones; height-locked kiosk grid on md+ */}
-        <div className={`md:flex-1 md:min-h-0 grid gap-3 p-3 pt-0 grid-cols-1 ${gridCols}`}>
-          {/* Left — Agenda (after calendar when stacked) */}
-          {panels.agenda && (
-            <div className="order-2 md:landscape:order-1 lg:order-1 md:min-h-0">
-              <AgendaPanel />
+        {dashboardView === "home" ? (
+          /* Naturally-sized scrolling column on phones; height-locked kiosk grid on md+ */
+          <div className={`md:flex-1 md:min-h-0 grid gap-3 p-3 pt-0 grid-cols-1 ${gridCols}`}>
+            {/* Left — Agenda (after calendar when stacked) */}
+            {panels.agenda && (
+              <div className="order-2 md:landscape:order-1 lg:order-1 md:min-h-0">
+                <AgendaPanel />
+              </div>
+            )}
+
+            {/* Center — Calendar + countdown */}
+            <div className="order-1 md:landscape:order-2 lg:order-2 flex flex-col gap-3 md:min-h-0">
+              <MonthCalendar />
+              <CountdownBanner />
             </div>
-          )}
 
-          {/* Center — Calendar + countdown */}
-          <div className="order-1 md:landscape:order-2 lg:order-2 flex flex-col gap-3 md:min-h-0">
-            <MonthCalendar />
-            <CountdownBanner />
+            {/* Right — Lists (chores, shopping, …) */}
+            {panels.lists && (
+              <div className="order-3 md:min-h-0">
+                <TodoPanel />
+              </div>
+            )}
           </div>
-
-          {/* Right — Lists (chores, shopping, …) */}
-          {panels.lists && (
-            <div className="order-3 md:min-h-0">
-              <TodoPanel />
+        ) : (
+          /* Focused single-panel views */
+          <div className="md:flex-1 md:min-h-0 p-3 pt-0 flex justify-center">
+            <div
+              className={[
+                "w-full md:h-full md:min-h-0 flex flex-col gap-3",
+                dashboardView === "calendar" ? "" : "max-w-2xl",
+              ].join(" ")}
+            >
+              {dashboardView === "calendar" && (
+                <>
+                  <MonthCalendar />
+                  <CountdownBanner />
+                </>
+              )}
+              {dashboardView === "agenda" && <AgendaPanel />}
+              {dashboardView === "chores" && <TodoPanel lockListKey="chores" />}
+              {dashboardView === "lists" && <TodoPanel />}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       <EventAssignSheet />

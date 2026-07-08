@@ -112,18 +112,20 @@ function MemberSection({
   );
 }
 
-export default function TodoPanel() {
+export default function TodoPanel({ lockListKey }: { lockListKey?: string }) {
   const { lists, addList, deleteList } = useLists();
   const { googleLists } = useGoogleTaskLists();
   const { activeList, setActiveList } = useThemeStore();
 
-  const isGoogle = activeList.startsWith("g:");
-  const googleListId = isGoogle ? activeList.slice(2) : null;
+  // A locked panel (e.g. the Chores view) pins one list and hides the switcher
+  const effectiveList = lockListKey ?? activeList;
+  const isGoogle = effectiveList.startsWith("g:");
+  const googleListId = isGoogle ? effectiveList.slice(2) : null;
   const currentGoogle = googleLists.find((l) => l.id === googleListId);
 
   // Fall back to Chores if a persisted local list was deleted
   const currentLocal = !isGoogle
-    ? lists.find((l) => l.key === activeList) ?? lists.find((l) => l.key === "chores")
+    ? lists.find((l) => l.key === effectiveList) ?? lists.find((l) => l.key === "chores")
     : undefined;
   const listKey = currentLocal?.key ?? "chores";
   const isChores = !isGoogle && listKey === "chores";
@@ -277,7 +279,8 @@ export default function TodoPanel() {
         </div>
       </div>
 
-      {/* List switcher */}
+      {/* List switcher (hidden when the panel is locked to one list) */}
+      {!lockListKey && (
       <div className="flex gap-1.5 overflow-x-auto scrollbar-none -mx-1 px-1">
         {lists.map((l) => (
           <button
@@ -322,8 +325,9 @@ export default function TodoPanel() {
           +
         </button>
       </div>
+      )}
 
-      {showAddList && (
+      {showAddList && !lockListKey && (
         <form onSubmit={handleAddList} className="flex gap-1.5">
           <input
             value={newListName}

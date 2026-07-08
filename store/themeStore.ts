@@ -4,6 +4,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 export type CalendarView = "month" | "week";
+export type DashboardView = "home" | "calendar" | "agenda" | "chores" | "lists";
 
 export interface PanelVisibility {
   agenda: boolean;
@@ -16,11 +17,13 @@ interface ThemeState {
   calendarView: CalendarView;
   panels: PanelVisibility;
   activeList: string; // list key shown in the Lists panel
+  dashboardView: DashboardView;
   toggleTheme: () => void;
   setAccentColor: (color: string) => void;
   setCalendarView: (view: CalendarView) => void;
   setPanelVisible: (panel: keyof PanelVisibility, visible: boolean) => void;
   setActiveList: (key: string) => void;
+  setDashboardView: (view: DashboardView) => void;
 }
 
 const DEFAULTS = {
@@ -29,6 +32,7 @@ const DEFAULTS = {
   calendarView: "month" as CalendarView,
   panels: { agenda: true, lists: true } as PanelVisibility,
   activeList: "chores",
+  dashboardView: "home" as DashboardView,
 };
 
 export const useThemeStore = create<ThemeState>()(
@@ -42,6 +46,7 @@ export const useThemeStore = create<ThemeState>()(
       setPanelVisible: (panel, visible) =>
         set((s) => ({ panels: { ...s.panels, [panel]: visible } })),
       setActiveList: (key) => set({ activeList: key }),
+      setDashboardView: (view) => set({ dashboardView: view }),
     }),
     {
       name: "dashboard-theme",
