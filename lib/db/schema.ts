@@ -47,8 +47,20 @@ export function runMigrations() {
       member_id  INTEGER NOT NULL,
       PRIMARY KEY (event_key, member_id)
     );
+
+    CREATE TABLE IF NOT EXISTS lists (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      name       TEXT    NOT NULL,
+      key        TEXT    NOT NULL UNIQUE,
+      sort_order INTEGER NOT NULL DEFAULT 0
+    );
   `);
 
   // Additive migrations — safe to run repeatedly
   try { db.exec("ALTER TABLE todos ADD COLUMN member_id INTEGER"); } catch { /* already exists */ }
+
+  // Built-in list; todos with list_name 'chores' predate the lists table
+  db.prepare(
+    "INSERT OR IGNORE INTO lists (name, key, sort_order) VALUES ('Chores', 'chores', 0)"
+  ).run();
 }

@@ -3,6 +3,8 @@
 import { useState, FormEvent } from "react";
 import { useTodos } from "@/hooks/useTodos";
 import { useMembers } from "@/hooks/useMembers";
+import { useLists } from "@/hooks/useLists";
+import { useThemeStore } from "@/store/themeStore";
 import { SkeletonLoader } from "@/components/ui/SkeletonLoader";
 import { MEMBER_COLORS } from "@/lib/colors";
 import type { Todo } from "@/lib/db/queries/todos";
@@ -101,19 +103,59 @@ function MemberSection({
 }
 
 export default function TodoPanel() {
-  const { todos, isLoading, addTodo, toggleTodo, deleteTodo } = useTodos("chores");
+  const { lists, addList, deleteList } = useLists();
+  const { activeList, setActiveList } = useThemeStore();
+  // Fall back to Chores if the persisted active list was deleted
+  const currentList =
+    lists.find((l) => l.key === activeList) ?? lists.find((l) => l.key === "chores");
+  const listKey = currentList?.key ?? "chores";
+  const isChores = listKey === "chores";
+
+  const { todos, isLoading, addTodo, toggleTodo, deleteTodo } = useTodos(listKey);
   const { members, addMember } = useMembers();
   const [newTitle, setNewTitle] = useState("");
   const [selectedMemberId, setSelectedMemberId] = useState<number | "">("");
   const [showAddMember, setShowAddMember] = useState(false);
   const [newMemberName, setNewMemberName] = useState("");
+  const [showAddList, setShowAddList] = useState(false);
+  const [newListName, setNewListName] = useState("");
   const [saveError, setSaveError] = useState("");
+
+  async function handleAddList(e: FormEvent) {
+    e.preventDefault();
+    if (!newListName.trim()) return;
+    try {
+      const list = await addList(newListName.trim());
+      setActiveList(list.key);
+      setNewListName("");
+      setShowAddList(false);
+      setSaveError("");
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Failed to create list");
+    }
+  }
+
+  async function handleDeleteList() {
+    if (!currentList || isChores) return;
+    if (!window.confirm(`Delete the "${currentList.name}" list and its items?`)) return;
+    try {
+      await deleteList(currentList.id);
+      setActiveList("chores");
+      setSaveError("");
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Failed to delete list");
+    }
+  }
 
   async function handleAddTodo(e: FormEvent) {
     e.preventDefault();
     if (!newTitle.trim()) return;
     try {
-      await addTodo(newTitle.trim(), undefined, selectedMemberId ? Number(selectedMemberId) : undefined);
+      await addTodo(
+        newTitle.trim(),
+        undefined,
+        isChores && selectedMemberId ? Number(selectedMemberId) : undefined
+      );
       setNewTitle("");
       setSaveError("");
     } catch (err) {
@@ -150,18 +192,75 @@ export default function TodoPanel() {
 
   return (
     <div className="sky-card p-4 flex flex-col gap-3 overflow-y-auto scrollbar-none min-h-0 h-full">
-      <div className="flex items-center justify-between">
-        <h2 className="text-base font-bold text-[var(--foreground)]">Chores</h2>
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-base font-bold text-[var(--foreground)] truncate">
+          {currentList?.name ?? "Lists"}
+        </h2>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {!isChores && currentList && (
+            <button
+              onClick={handleDeleteList}
+              className="text-[11px] font-semibold text-[var(--muted)] hover:text-red-500 transition"
+              title="Delete this list"
+            >
+              Delete list
+            </button>
+          )}
+          {isChores && (
+            <button
+              onClick={() => setShowAddMember(!showAddMember)}
+              className="text-[11px] font-semibold text-[var(--teal)] hover:text-[var(--accent)] transition"
+              title="Add family member"
+            >
+              + Person
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* List switcher */}
+      <div className="flex gap-1.5 overflow-x-auto scrollbar-none -mx-1 px-1">
+        {lists.map((l) => (
+          <button
+            key={l.id}
+            onClick={() => setActiveList(l.key)}
+            className={[
+              "px-2.5 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap transition flex-shrink-0",
+              l.key === listKey
+                ? "bg-[var(--accent)] text-white shadow-sm"
+                : "bg-[var(--surface-2)] text-[var(--muted)] hover:text-[var(--foreground)]",
+            ].join(" ")}
+          >
+            {l.name}
+          </button>
+        ))}
         <button
-          onClick={() => setShowAddMember(!showAddMember)}
-          className="text-[11px] font-semibold text-[var(--teal)] hover:text-[var(--accent)] transition"
-          title="Add family member"
+          onClick={() => setShowAddList(!showAddList)}
+          className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[var(--surface-2)] text-[var(--teal)] hover:bg-[var(--teal)] hover:text-white transition flex-shrink-0"
+          title="New list"
         >
-          + Person
+          +
         </button>
       </div>
 
-      {showAddMember && (
+      {showAddList && (
+        <form onSubmit={handleAddList} className="flex gap-1.5">
+          <input
+            value={newListName}
+            onChange={(e) => setNewListName(e.target.value)}
+            placeholder="List name (e.g. Groceries)"
+            className={`flex-1 px-2.5 py-1.5 text-xs min-w-0 ${inputClass}`}
+          />
+          <button
+            type="submit"
+            className="px-3 py-1.5 rounded-xl bg-[var(--teal)] text-white text-xs font-semibold hover:opacity-90 transition"
+          >
+            Add
+          </button>
+        </form>
+      )}
+
+      {showAddMember && isChores && (
         <form onSubmit={handleAddMember} className="flex gap-1.5">
           <input
             value={newMemberName}
@@ -182,31 +281,44 @@ export default function TodoPanel() {
         <SkeletonLoader count={3} />
       ) : (
         <div className="flex flex-col gap-3">
-          {/* Member sections */}
-          {members.map((m) => (
-            <MemberSection
-              key={m.id}
-              member={m}
-              todos={byMember.get(m.id) ?? []}
-              onToggle={toggleTodo}
-              onDelete={deleteTodo}
-            />
-          ))}
+          {isChores ? (
+            <>
+              {/* Member sections */}
+              {members.map((m) => (
+                <MemberSection
+                  key={m.id}
+                  member={m}
+                  todos={byMember.get(m.id) ?? []}
+                  onToggle={toggleTodo}
+                  onDelete={deleteTodo}
+                />
+              ))}
 
-          {/* General chores (no member) */}
-          {(byMember.get(null) ?? []).length > 0 && (
-            <MemberSection
-              member={null}
-              todos={byMember.get(null) ?? []}
-              onToggle={toggleTodo}
-              onDelete={deleteTodo}
-            />
+              {/* General chores (no member) */}
+              {(byMember.get(null) ?? []).length > 0 && (
+                <MemberSection
+                  member={null}
+                  todos={byMember.get(null) ?? []}
+                  onToggle={toggleTodo}
+                  onDelete={deleteTodo}
+                />
+              )}
+            </>
+          ) : (
+            /* Plain lists (shopping etc.) — flat items, no member grouping */
+            <div>
+              {todos.map((t) => (
+                <TodoItem key={t.id} todo={t} onToggle={toggleTodo} onDelete={deleteTodo} />
+              ))}
+            </div>
           )}
 
           {todos.length === 0 && (
             <div className="flex flex-col items-center gap-1 py-4 text-center">
-              <span className="text-3xl">🎉</span>
-              <p className="text-sm text-[var(--muted)] font-medium">All done!</p>
+              <span className="text-3xl">{isChores ? "🎉" : "🛒"}</span>
+              <p className="text-sm text-[var(--muted)] font-medium">
+                {isChores ? "All done!" : "Nothing here yet"}
+              </p>
             </div>
           )}
         </div>
@@ -223,7 +335,7 @@ export default function TodoPanel() {
         onSubmit={handleAddTodo}
         className="flex flex-col gap-1.5 mt-auto pt-3 border-t border-[var(--border)]"
       >
-        {members.length > 0 && (
+        {isChores && members.length > 0 && (
           <select
             value={selectedMemberId}
             onChange={(e) =>
@@ -243,7 +355,7 @@ export default function TodoPanel() {
           <input
             value={newTitle}
             onChange={(e) => setNewTitle(e.target.value)}
-            placeholder="Add a chore…"
+            placeholder={isChores ? "Add a chore…" : "Add an item…"}
             className={`flex-1 px-3 py-2 text-sm min-w-0 ${inputClass}`}
           />
           <button

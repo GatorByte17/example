@@ -201,6 +201,44 @@ function AppearanceSection() {
   );
 }
 
+function PanelsSection() {
+  const { panels, setPanelVisible } = useThemeStore();
+
+  const rows: { key: keyof typeof panels; label: string; description: string }[] = [
+    { key: "agenda", label: "Agenda", description: "Today & tomorrow's events" },
+    { key: "lists", label: "Lists", description: "Chores, shopping lists, …" },
+  ];
+
+  return (
+    <SectionCard
+      title="Dashboard panels"
+      description="Choose what shows next to the calendar on this device."
+    >
+      <div className="flex flex-col gap-1">
+        {rows.map((row) => (
+          <label
+            key={row.key}
+            className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-[var(--surface-2)]/60 transition cursor-pointer"
+          >
+            <input
+              type="checkbox"
+              checked={panels[row.key]}
+              onChange={(e) => setPanelVisible(row.key, e.target.checked)}
+              className="w-4 h-4 accent-[var(--accent)]"
+            />
+            <span className="flex-1">
+              <span className="block text-sm font-medium text-[var(--foreground)]">
+                {row.label}
+              </span>
+              <span className="block text-xs text-[var(--muted)]">{row.description}</span>
+            </span>
+          </label>
+        ))}
+      </div>
+    </SectionCard>
+  );
+}
+
 interface LocationSettings {
   latitude: string;
   longitude: string;
@@ -416,6 +454,7 @@ export default function SettingsView() {
         </div>
 
         <FamilySection />
+        <PanelsSection />
         <AppearanceSection />
         <LocationSection />
         <CalendarsSection />
